@@ -31,15 +31,22 @@ export async function runMigrations(): Promise<void> {
       const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf-8');
       console.log(`[migrate] Applying ${file}...`);
 
-      // Split on semicolons to execute each statement separately
-      const statements = sql
+      // Strip comment-only lines, then split on semicolons
+      const cleaned = sql
+        .split('\n')
+        .filter(line => !line.trimStart().startsWith('--'))
+        .join('\n');
+      const statements = cleaned
         .split(';')
         .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--'));
+        .filter(s => s.length > 0);
 
+      // Disable FK checks so tables can be created in any order
+      await conn.execute('SET FOREIGN_KEY_CHECKS=0');
       for (const statement of statements) {
         await conn.execute(statement);
       }
+      await conn.execute('SET FOREIGN_KEY_CHECKS=1');
 
       await conn.execute(
         'INSERT INTO _migrations (filename) VALUES (?)',

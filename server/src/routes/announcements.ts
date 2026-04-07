@@ -35,7 +35,7 @@ router.get('/', validate(listQuerySchema, 'query'), async (req, res) => {
   try {
     const { limit } = req.query as unknown as z.infer<typeof listQuerySchema>;
 
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       `SELECT id, title_ar, title_ru, title_en, body_ar, body_ru, body_en,
               priority, category, sent_at, created_at
        FROM announcements
@@ -57,7 +57,7 @@ router.get('/admin', requireAuth, async (req, res) => {
   try {
     const limit = parseInt(String(req.query.limit || '50'), 10);
 
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       `SELECT a.id, a.title_ar, a.title_ru, a.title_en, a.body_ar, a.body_ru, a.body_en,
               a.priority, a.category, a.status, a.scheduled_for, a.sent_at, a.created_at,
               a.created_by, adm.display_name as created_by_name,
