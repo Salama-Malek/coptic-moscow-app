@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Coptic Church Moscow",
+    "slug": "coptic-moscow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F7F1E6",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "church.copticmoscow.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F1E6"
+      },
+      "package": "church.copticmoscow.app"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./assets/sounds/bell.mp3"]
+        }
+      ]
+    ]
+  }
+}

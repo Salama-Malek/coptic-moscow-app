@@ -1,0 +1,35 @@
+{
+  "app_name": "Коптская Церковь в Москве",
+  "home": "Главная",
+  "calendar": "Календарь",
+  "inbox": "Сообщения",
+  "settings": "Настройки",
+
+  "today_services": "Службы сегодня",
+  "next_event": "Следующее событие",
+  "recent_announcements": "Последние объявления",
+  "no_services_today": "Сегодня нет служб",
+  "no_upcoming": "Нет предстоящих событий",
+
+  "upcoming_30_days": "Предстоящие события (30 дней)",
+  "no_events": "Нет событий",
+
+  "no_announcements": "Нет объявлений",
+  "unread": "Непрочитано",
+
+  "language": "Язык",
+  "notifications": "Уведомления",
+  "notification_permission": "Разрешение уведомлений",
+  "granted": "Разрешено",
+  "denied": "Запрещено",
+  "services_notifications": "Уведомления о службах",
+  "announcements_notifications": "Объявления",
+  "test_notification": "Тестовое уведомление",
+  "admin_login": "Вход для администраторов",
+  "app_version": "Версия приложения",
+  "offline": "Нет сети",
+
+  "select_language": "Выберите язык",
+  "welcome": "Добро пожаловать в Коптскую Православную Церковь в Москве",
+  "continue": "Продолжить"
+}

@@ -1,0 +1,35 @@
+{
+  "app_name": "الكنيسة القبطية بموسكو",
+  "home": "الرئيسية",
+  "calendar": "التقويم",
+  "inbox": "الرسائل",
+  "settings": "الإعدادات",
+
+  "today_services": "خدمات اليوم",
+  "next_event": "الحدث التالي",
+  "recent_announcements": "آخر الإعلانات",
+  "no_services_today": "لا توجد خدمات اليوم",
+  "no_upcoming": "لا توجد أحداث قادمة",
+
+  "upcoming_30_days": "الأحداث القادمة (٣٠ يوم)",
+  "no_events": "لا توجد أحداث",
+
+  "no_announcements": "لا توجد إعلانات",
+  "unread": "غير مقروء",
+
+  "language": "اللغة",
+  "notifications": "الإشعارات",
+  "notification_permission": "إذن الإشعارات",
+  "granted": "مسموح",
+  "denied": "مرفوض",
+  "services_notifications": "إشعارات الخدمات",
+  "announcements_notifications": "إشعارات الإعلانات",
+  "test_notification": "إشعار تجريبي",
+  "admin_login": "دخول المشرفين",
+  "app_version": "إصدار التطبيق",
+  "offline": "غير متصل",
+
+  "select_language": "اختر اللغة",
+  "welcome": "مرحبا بكم في الكنيسة القبطية الأرثوذكسية بموسكو",
+  "continue": "متابعة"
+}

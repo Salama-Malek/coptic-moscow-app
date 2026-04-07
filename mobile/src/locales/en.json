@@ -1,0 +1,35 @@
+{
+  "app_name": "Coptic Church Moscow",
+  "home": "Home",
+  "calendar": "Calendar",
+  "inbox": "Inbox",
+  "settings": "Settings",
+
+  "today_services": "Today's Services",
+  "next_event": "Next Event",
+  "recent_announcements": "Recent Announcements",
+  "no_services_today": "No services today",
+  "no_upcoming": "No upcoming events",
+
+  "upcoming_30_days": "Upcoming Events (30 days)",
+  "no_events": "No events",
+
+  "no_announcements": "No announcements",
+  "unread": "Unread",
+
+  "language": "Language",
+  "notifications": "Notifications",
+  "notification_permission": "Notification Permission",
+  "granted": "Granted",
+  "denied": "Denied",
+  "services_notifications": "Service Notifications",
+  "announcements_notifications": "Announcement Notifications",
+  "test_notification": "Test Notification",
+  "admin_login": "Admin Login",
+  "app_version": "App Version",
+  "offline": "Offline",
+
+  "select_language": "Select Language",
+  "welcome": "Welcome to the Coptic Orthodox Church in Moscow",
+  "continue": "Continue"
+}
