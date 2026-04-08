@@ -19,11 +19,7 @@ export default function ChangePassword() {
     setLoading(true);
     setError('');
     try {
-      await api.post('/admin/me/password', {
-        current_password: currentPassword,
-        new_password: newPassword,
-      });
-      // Update stored admin to clear must_change_password
+      await api.post('/admin/me/password', { current_password: currentPassword, new_password: newPassword });
       const stored = localStorage.getItem('admin_user');
       if (stored) {
         const admin = JSON.parse(stored);
@@ -41,20 +37,15 @@ export default function ChangePassword() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: colors.parchment, fontFamily: fonts.body,
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          width: 360, padding: 32, background: colors.white,
-          border: `1px solid ${colors.gold}`, borderRadius: 12,
-        }}
-      >
-        <h2 style={{ fontFamily: fonts.heading, color: colors.primary, textAlign: 'center', margin: '0 0 8px' }}>
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: colors.parchment, fontFamily: fonts.body, padding: 16,
+    }}>
+      <form onSubmit={handleSubmit} style={{
+        width: '100%', maxWidth: 380, padding: '28px 24px', background: colors.white,
+        border: `1px solid ${colors.gold}`, borderRadius: 12,
+      }}>
+        <h2 style={{ fontFamily: fonts.heading, color: colors.primary, textAlign: 'center', margin: '0 0 8px', fontSize: 18 }}>
           {t('change_password')}
         </h2>
         <p style={{ textAlign: 'center', color: colors.muted, fontSize: 13, margin: '0 0 24px' }}>
@@ -67,32 +58,19 @@ export default function ChangePassword() {
           </div>
         )}
 
-        <label style={{ display: 'block', marginBottom: 14 }}>
-          <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 4 }}>{t('current_password')}</span>
-          <input
-            type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-            required dir="ltr"
-            style={{ width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
-          />
-        </label>
+        <div className="form-group">
+          <label className="form-label">{t('current_password')}</label>
+          <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+            required dir="ltr" className="form-input" />
+        </div>
 
-        <label style={{ display: 'block', marginBottom: 20 }}>
-          <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 4 }}>{t('new_password')}</span>
-          <input
-            type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            required minLength={8} dir="ltr"
-            style={{ width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
-          />
-        </label>
+        <div className="form-group">
+          <label className="form-label">{t('new_password')}</label>
+          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+            required minLength={8} dir="ltr" className="form-input" />
+        </div>
 
-        <button
-          type="submit" disabled={loading}
-          style={{
-            width: '100%', padding: '12px 0', border: 'none', borderRadius: 6,
-            background: colors.primary, color: colors.white, fontSize: 15,
-            cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1,
-          }}
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block" style={{ marginTop: 6 }}>
           {loading ? t('loading') : t('save')}
         </button>
       </form>

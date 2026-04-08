@@ -11,16 +11,15 @@ export default function StatsCard({ title, value, subtitle }: StatsCardProps) {
     <div
       style={{
         border: `1px solid ${colors.gold}`,
-        borderRadius: 8,
-        padding: 20,
+        borderRadius: 10,
+        padding: '16px 14px',
         background: colors.white,
-        minWidth: 160,
         textAlign: 'center',
       }}
     >
-      <div style={{ color: colors.muted, fontSize: 13, marginBottom: 6 }}>{title}</div>
-      <div style={{ color: colors.primary, fontSize: 28, fontWeight: 700 }}>{value}</div>
-      {subtitle && <div style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}>{subtitle}</div>}
+      <div style={{ color: colors.muted, fontSize: 12, marginBottom: 4 }}>{title}</div>
+      <div style={{ color: colors.primary, fontSize: 24, fontWeight: 700 }}>{value}</div>
+      {subtitle && <div style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{subtitle}</div>}
     </div>
   );
 }

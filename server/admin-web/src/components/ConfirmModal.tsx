@@ -18,44 +18,33 @@ export default function ConfirmModal({ open, title, message, onConfirm, onCancel
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         background: 'rgba(0,0,0,0.5)',
+        padding: 16,
       }}
       onClick={onCancel}
     >
       <div
         style={{
           background: colors.white,
-          borderRadius: 12,
-          padding: 28,
-          minWidth: 340,
-          maxWidth: 480,
-          border: `1px solid ${colors.gold}`,
+          borderRadius: 16,
+          padding: 24,
+          width: '100%',
+          maxWidth: 440,
+          marginBottom: 'env(safe-area-inset-bottom, 16px)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ color: colors.primary, margin: '0 0 12px' }}>{title}</h3>
-        <p style={{ color: colors.ink, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{message}</p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '8px 20px', border: `1px solid ${colors.border}`,
-              borderRadius: 6, background: 'transparent', cursor: 'pointer',
-            }}
-          >
-            {t('cancel')}
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            style={{
-              padding: '8px 20px', border: 'none', borderRadius: 6,
-              background: colors.primary, color: colors.white, cursor: 'pointer',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
+        <h3 style={{ color: colors.primary, margin: '0 0 12px', fontSize: 17 }}>{title}</h3>
+        <p style={{ color: colors.ink, whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: 14, marginBottom: 20 }}>
+          {message}
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={onConfirm} disabled={loading} className="btn btn-primary btn-block">
             {loading ? t('loading') : t('confirm')}
+          </button>
+          <button onClick={onCancel} className="btn btn-secondary btn-block">
+            {t('cancel')}
           </button>
         </div>
       </div>

@@ -32,7 +32,7 @@ export default function Login() {
     <div
       style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: colors.parchment, fontFamily: fonts.body,
+        background: colors.parchment, fontFamily: fonts.body, padding: 16,
       }}
     >
       <div style={{ position: 'absolute', top: 16, insetInlineEnd: 16 }}>
@@ -41,14 +41,14 @@ export default function Login() {
       <form
         onSubmit={handleSubmit}
         style={{
-          width: 360, padding: 32, background: colors.white,
+          width: '100%', maxWidth: 380, padding: '28px 24px', background: colors.white,
           border: `1px solid ${colors.gold}`, borderRadius: 12,
         }}
       >
-        <h1 style={{ fontFamily: fonts.heading, color: colors.primary, textAlign: 'center', fontSize: 22, margin: '0 0 4px' }}>
+        <h1 style={{ fontFamily: fonts.heading, color: colors.primary, textAlign: 'center', fontSize: 20, margin: '0 0 4px' }}>
           {t('app_title')}
         </h1>
-        <p style={{ textAlign: 'center', color: colors.muted, fontSize: 14, margin: '0 0 24px' }}>
+        <p style={{ textAlign: 'center', color: colors.muted, fontSize: 13, margin: '0 0 24px' }}>
           {t('admin_panel')}
         </p>
 
@@ -58,45 +58,23 @@ export default function Login() {
           </div>
         )}
 
-        <label style={{ display: 'block', marginBottom: 14 }}>
-          <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 4 }}>{t('email')}</span>
+        <div className="form-group">
+          <label className="form-label">{t('email')}</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            dir="ltr"
-            style={{
-              width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`,
-              borderRadius: 6, fontSize: 14, boxSizing: 'border-box',
-            }}
+            type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            required dir="ltr" className="form-input"
           />
-        </label>
+        </div>
 
-        <label style={{ display: 'block', marginBottom: 20 }}>
-          <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 4 }}>{t('password')}</span>
+        <div className="form-group">
+          <label className="form-label">{t('password')}</label>
           <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            dir="ltr"
-            style={{
-              width: '100%', padding: '10px 12px', border: `1px solid ${colors.border}`,
-              borderRadius: 6, fontSize: 14, boxSizing: 'border-box',
-            }}
+            type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            required dir="ltr" className="form-input"
           />
-        </label>
+        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%', padding: '12px 0', border: 'none', borderRadius: 6,
-            background: colors.primary, color: colors.white, fontSize: 15,
-            cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1,
-          }}
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block" style={{ marginTop: 6 }}>
           {loading ? t('loading') : t('login')}
         </button>
       </form>

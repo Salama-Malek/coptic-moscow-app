@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import { useApiGet } from '../hooks/useApi';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import TemplateForm from '../components/TemplateForm';
 import LivePreview from '../components/LivePreview';
 import ConfirmModal from '../components/ConfirmModal';
@@ -12,6 +13,7 @@ import type { Template, Stats } from '../types';
 export default function NewAnnouncement() {
   const { t, i18n } = useTranslation();
   const fonts = getFonts(i18n.language);
+  const isMobile = useIsMobile();
   const { data: templates } = useApiGet<Template[]>('/admin/templates');
   const { data: stats } = useApiGet<Stats>('/admin/stats');
 
@@ -19,18 +21,15 @@ export default function NewAnnouncement() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [values, setValues] = useState<Record<string, string | number | boolean>>({});
 
-  // Rendered preview bodies
   const [bodyAr, setBodyAr] = useState('');
   const [bodyRu, setBodyRu] = useState<string | null>(null);
   const [bodyEn, setBodyEn] = useState<string | null>(null);
 
-  // Allow manual edits to the rendered body
   const [editedBodyAr, setEditedBodyAr] = useState('');
   const [editedBodyRu, setEditedBodyRu] = useState('');
   const [editedBodyEn, setEditedBodyEn] = useState('');
   const [manualEdit, setManualEdit] = useState(false);
 
-  // Announcement fields
   const [titleAr, setTitleAr] = useState('');
   const [titleRu, setTitleRu] = useState('');
   const [titleEn, setTitleEn] = useState('');
@@ -42,21 +41,19 @@ export default function NewAnnouncement() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [showPreview, setShowPreview] = useState(!isMobile);
 
-  // Load template details when selection changes
   useEffect(() => {
     if (selectedTemplateId && templates) {
       const tmpl = templates.find(t => t.id === selectedTemplateId);
       if (tmpl) {
         setSelectedTemplate(tmpl);
-        // Initialize values from defaults
         const placeholders = typeof tmpl.placeholders === 'string' ? JSON.parse(tmpl.placeholders) : tmpl.placeholders;
         const defaults: Record<string, string | number | boolean> = {};
         for (const p of placeholders) {
           if (p.default !== undefined) defaults[p.key] = p.default;
         }
         setValues(defaults);
-        // Set title from template name
         setTitleAr(tmpl.name_ar);
         setTitleRu(tmpl.name_ru || '');
         setTitleEn(tmpl.name_en || '');
@@ -65,14 +62,11 @@ export default function NewAnnouncement() {
     } else {
       setSelectedTemplate(null);
       setValues({});
-      setBodyAr('');
-      setBodyRu(null);
-      setBodyEn(null);
+      setBodyAr(''); setBodyRu(null); setBodyEn(null);
       setManualEdit(false);
     }
   }, [selectedTemplateId, templates]);
 
-  // Render template preview on value changes
   const renderPreview = useCallback(async () => {
     if (!selectedTemplate || manualEdit) return;
     try {
@@ -83,9 +77,7 @@ export default function NewAnnouncement() {
       setEditedBodyAr(res.data.body_ar || '');
       setEditedBodyRu(res.data.body_ru || '');
       setEditedBodyEn(res.data.body_en || '');
-    } catch {
-      // silently fail preview
-    }
+    } catch { /* silent */ }
   }, [selectedTemplate, values, manualEdit]);
 
   useEffect(() => {
@@ -112,15 +104,13 @@ export default function NewAnnouncement() {
         body_ar: finalBodyAr,
         body_ru: finalBodyRu || undefined,
         body_en: finalBodyEn || undefined,
-        priority,
-        category,
+        priority, category,
         status: asDraft ? 'draft' : undefined,
         scheduled_for: scheduleMode === 'schedule' && !asDraft ? scheduledFor : undefined,
         template_id: selectedTemplateId || undefined,
       });
       setSuccessMsg(asDraft ? t('ann_draft') + ' ✓' : t('ann_sent') + ' ✓');
       setShowConfirm(false);
-      // Reset form
       if (!asDraft) {
         setSelectedTemplateId(null);
         setTitleAr(''); setTitleRu(''); setTitleEn('');
@@ -130,7 +120,6 @@ export default function NewAnnouncement() {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })
         ?.response?.data?.error?.message || 'Failed to send';
-      setSuccessMsg('');
       alert(msg);
     } finally {
       setSending(false);
@@ -143,25 +132,21 @@ export default function NewAnnouncement() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: fonts.heading, color: colors.primary, margin: '0 0 20px' }}>
-        {t('nav_new_announcement')}
-      </h1>
+      <h1 className="page-title" style={{ fontFamily: fonts.heading }}>{t('nav_new_announcement')}</h1>
 
       {successMsg && (
-        <div style={{ background: '#E8F5E9', color: colors.success, padding: '10px 14px', borderRadius: 6, marginBottom: 16 }}>
+        <div style={{ background: '#E8F5E9', color: colors.success, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
           {successMsg}
         </div>
       )}
 
       {/* Template picker */}
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 6 }}>
-          {t('choose_template')}
-        </label>
+      <div className="form-group">
+        <label className="form-label">{t('choose_template')}</label>
         <select
           value={selectedTemplateId || ''}
           onChange={(e) => setSelectedTemplateId(e.target.value ? Number(e.target.value) : null)}
-          style={{ padding: '8px 12px', border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 14, minWidth: 280 }}
+          className="form-input"
         >
           <option value="">{t('no_template')}</option>
           {templates?.map((tmpl) => (
@@ -172,119 +157,122 @@ export default function NewAnnouncement() {
         </select>
       </div>
 
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-        {/* Left: form */}
-        <div style={{ flex: 1, minWidth: 320 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24 }}>
+        {/* Form section */}
+        <div style={{ flex: 1, minWidth: 0 }}>
           {/* Title fields */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_title_ar')}</span>
-              <input value={titleAr} onChange={e => setTitleAr(e.target.value)} dir="rtl"
-                style={inputStyle} required />
-            </label>
-            <label style={{ display: 'block', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_title_ru')}</span>
-              <input value={titleRu} onChange={e => setTitleRu(e.target.value)} dir="ltr" style={inputStyle} />
-            </label>
-            <label style={{ display: 'block', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_title_en')}</span>
-              <input value={titleEn} onChange={e => setTitleEn(e.target.value)} dir="ltr" style={inputStyle} />
-            </label>
+          <div className="form-group">
+            <label className="form-label">{t('ann_title_ar')}</label>
+            <input value={titleAr} onChange={e => setTitleAr(e.target.value)} dir="rtl" className="form-input" required />
+          </div>
+          <div className={isMobile ? '' : 'grid-2'}>
+            <div className="form-group">
+              <label className="form-label">{t('ann_title_ru')}</label>
+              <input value={titleRu} onChange={e => setTitleRu(e.target.value)} dir="ltr" className="form-input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{t('ann_title_en')}</label>
+              <input value={titleEn} onChange={e => setTitleEn(e.target.value)} dir="ltr" className="form-input" />
+            </div>
           </div>
 
           {/* Template placeholder fields */}
           {selectedTemplate && placeholders.length > 0 && (
-            <div style={{ marginBottom: 16, padding: 16, background: colors.parchment, borderRadius: 8 }}>
+            <div style={{ padding: 14, background: colors.parchmentDark, borderRadius: 8, marginBottom: 14 }}>
               <TemplateForm placeholders={placeholders} values={values} onChange={handleValueChange} />
             </div>
           )}
 
-          {/* Manual body edit (no template or manual override) */}
+          {/* Manual body edit */}
           {(!selectedTemplate || manualEdit) && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 10 }}>
-                <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_body_ar')}</span>
+            <>
+              <div className="form-group">
+                <label className="form-label">{t('ann_body_ar')}</label>
                 <textarea value={editedBodyAr} onChange={e => setEditedBodyAr(e.target.value)} dir="rtl"
-                  rows={6} style={{ ...inputStyle, resize: 'vertical' }} required />
-              </label>
-              <label style={{ display: 'block', marginBottom: 10 }}>
-                <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_body_ru')}</span>
+                  rows={6} className="form-input" style={{ resize: 'vertical' }} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t('ann_body_ru')}</label>
                 <textarea value={editedBodyRu} onChange={e => setEditedBodyRu(e.target.value)} dir="ltr"
-                  rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
-              </label>
-              <label style={{ display: 'block', marginBottom: 10 }}>
-                <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_body_en')}</span>
+                  rows={4} className="form-input" style={{ resize: 'vertical' }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t('ann_body_en')}</label>
                 <textarea value={editedBodyEn} onChange={e => setEditedBodyEn(e.target.value)} dir="ltr"
-                  rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
-              </label>
-            </div>
+                  rows={4} className="form-input" style={{ resize: 'vertical' }} />
+              </div>
+            </>
           )}
 
-          {/* Switch to manual edit */}
           {selectedTemplate && !manualEdit && (
-            <button onClick={() => setManualEdit(true)}
-              style={{ fontSize: 12, color: colors.muted, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', marginBottom: 16 }}>
+            <button onClick={() => setManualEdit(true)} className="btn btn-ghost" style={{ fontSize: 12, marginBottom: 14 }}>
               Edit rendered text manually
             </button>
           )}
 
-          {/* Priority, category, schedule */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-            <label>
-              <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_priority')}</span>
-              <select value={priority} onChange={e => setPriority(e.target.value as typeof priority)}
-                style={{ padding: '8px 12px', border: `1px solid ${colors.border}`, borderRadius: 6 }}>
+          {/* Priority / category / schedule */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+            <div className="form-group">
+              <label className="form-label">{t('ann_priority')}</label>
+              <select value={priority} onChange={e => setPriority(e.target.value as typeof priority)} className="form-input">
                 <option value="normal">{t('priority_normal')}</option>
                 <option value="high">{t('priority_high')}</option>
                 <option value="critical">{t('priority_critical')}</option>
               </select>
-            </label>
-            <label>
-              <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_category')}</span>
-              <select value={category} onChange={e => setCategory(e.target.value as typeof category)}
-                style={{ padding: '8px 12px', border: `1px solid ${colors.border}`, borderRadius: 6 }}>
+            </div>
+            <div className="form-group">
+              <label className="form-label">{t('ann_category')}</label>
+              <select value={category} onChange={e => setCategory(e.target.value as typeof category)} className="form-input">
                 <option value="service">{t('category_service')}</option>
                 <option value="announcement">{t('category_announcement')}</option>
               </select>
-            </label>
-            <label>
-              <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_schedule')}</span>
-              <select value={scheduleMode} onChange={e => setScheduleMode(e.target.value as 'now' | 'schedule')}
-                style={{ padding: '8px 12px', border: `1px solid ${colors.border}`, borderRadius: 6 }}>
+            </div>
+            <div className="form-group" style={isMobile ? { gridColumn: '1 / -1' } : {}}>
+              <label className="form-label">{t('ann_schedule')}</label>
+              <select value={scheduleMode} onChange={e => setScheduleMode(e.target.value as 'now' | 'schedule')} className="form-input">
                 <option value="now">{t('ann_send_now')}</option>
                 <option value="schedule">{t('ann_schedule_for')}</option>
               </select>
-            </label>
-            {scheduleMode === 'schedule' && (
-              <label>
-                <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('ann_schedule_for')}</span>
-                <input type="datetime-local" value={scheduledFor} onChange={e => setScheduledFor(e.target.value)}
-                  style={{ padding: '8px 12px', border: `1px solid ${colors.border}`, borderRadius: 6 }} />
-              </label>
-            )}
+            </div>
           </div>
 
-          {/* Buttons */}
-          <div style={{ display: 'flex', gap: 12 }}>
+          {scheduleMode === 'schedule' && (
+            <div className="form-group">
+              <label className="form-label">{t('ann_schedule_for')}</label>
+              <input type="datetime-local" value={scheduledFor} onChange={e => setScheduledFor(e.target.value)} className="form-input" />
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
             <button onClick={() => handleSend(true)} disabled={sending || !titleAr}
-              style={{ padding: '10px 24px', border: `1px solid ${colors.primary}`, borderRadius: 6, background: 'transparent', color: colors.primary, cursor: 'pointer', fontSize: 14 }}>
+              className={`btn btn-secondary ${isMobile ? 'btn-block' : ''}`}>
               {t('ann_save_draft')}
             </button>
             <button onClick={() => setShowConfirm(true)} disabled={sending || !titleAr || (!bodyAr && !editedBodyAr)}
-              style={{ padding: '10px 24px', border: 'none', borderRadius: 6, background: colors.primary, color: colors.white, cursor: 'pointer', fontSize: 14 }}>
+              className={`btn btn-primary ${isMobile ? 'btn-block' : ''}`}>
               {t('ann_preview_send')}
             </button>
           </div>
         </div>
 
-        {/* Right: live preview */}
-        <div style={{ flex: 1, minWidth: 320 }}>
-          <h3 style={{ color: colors.primary, margin: '0 0 10px', fontSize: 15 }}>{t('live_preview')}</h3>
-          <LivePreview
-            bodyAr={manualEdit ? editedBodyAr : bodyAr}
-            bodyRu={manualEdit ? editedBodyRu : bodyRu}
-            bodyEn={manualEdit ? editedBodyEn : bodyEn}
-          />
+        {/* Preview section */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {isMobile && (
+            <button onClick={() => setShowPreview(!showPreview)} className="btn btn-ghost" style={{ marginBottom: 8, width: '100%' }}>
+              {showPreview ? '▲' : '▼'} {t('live_preview')}
+            </button>
+          )}
+          {(!isMobile || showPreview) && (
+            <>
+              {!isMobile && <h3 style={{ color: colors.primary, margin: '0 0 10px', fontSize: 15 }}>{t('live_preview')}</h3>}
+              <LivePreview
+                bodyAr={manualEdit ? editedBodyAr : bodyAr}
+                bodyRu={manualEdit ? editedBodyRu : bodyRu}
+                bodyEn={manualEdit ? editedBodyEn : bodyEn}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -299,8 +287,3 @@ export default function NewAnnouncement() {
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', border: `1px solid #D4C5A9`,
-  borderRadius: 6, fontSize: 14, boxSizing: 'border-box',
-};

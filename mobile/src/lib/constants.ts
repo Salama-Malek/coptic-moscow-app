@@ -1,4 +1,9 @@
-export const API_BASE_URL = 'https://coptic-api.sm4tech.com/api';
+// For local dev: use your machine's LAN IP so the phone can reach the server
+// For production: change back to 'https://coptic-api.sm4tech.com/api'
+const DEV_API = 'http://192.168.44.107:3000/api';
+const PROD_API = 'https://coptic-api.sm4tech.com/api';
+
+export const API_BASE_URL = __DEV__ ? DEV_API : PROD_API;
 
 export const PARISH_NAME = {
   ar: 'الكنيسة القبطية بموسكو',

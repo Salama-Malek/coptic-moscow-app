@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { colors } from '../theme/colors';
 import type { PlaceholderDef, Language } from '../types';
+import { colors } from '../theme/colors';
 
 interface TemplateFormProps {
   placeholders: PlaceholderDef[];
@@ -19,21 +19,21 @@ export default function TemplateForm({ placeholders, values, onChange }: Templat
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {placeholders.map((p) => {
         const val = values[p.key] ?? p.default ?? '';
 
         if (p.type === 'boolean') {
           return (
-            <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+            <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, fontSize: 14 }}>
               <input
                 type="checkbox"
                 checked={!!val}
                 onChange={(e) => onChange(p.key, e.target.checked)}
-                style={{ width: 18, height: 18, accentColor: colors.primary }}
+                style={{ width: 22, height: 22, accentColor: colors.primary }}
               />
               <span>{getLabel(p)}</span>
-              {p.optional && <span style={{ color: colors.muted, fontSize: 12 }}>(optional)</span>}
+              {p.optional && <span style={{ color: colors.muted, fontSize: 11 }}>(optional)</span>}
             </label>
           );
         }
@@ -45,21 +45,18 @@ export default function TemplateForm({ placeholders, values, onChange }: Templat
           : 'text';
 
         return (
-          <label key={p.key} style={{ display: 'block' }}>
-            <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>
+          <div key={p.key} className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">
               {getLabel(p)}
               {p.optional && <span style={{ marginInlineStart: 4, fontSize: 11 }}>(optional)</span>}
-            </span>
+            </label>
             <input
               type={inputType}
               value={String(val)}
               onChange={(e) => onChange(p.key, p.type === 'number' ? Number(e.target.value) : e.target.value)}
-              style={{
-                width: '100%', padding: '8px 10px', border: `1px solid ${colors.border}`,
-                borderRadius: 6, fontSize: 14, boxSizing: 'border-box',
-              }}
+              className="form-input"
             />
-          </label>
+          </div>
         );
       })}
     </div>

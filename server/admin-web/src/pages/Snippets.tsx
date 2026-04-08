@@ -23,70 +23,63 @@ export default function Snippets() {
   const handleSave = async () => {
     if (!editingKey) return;
     setSaving(true);
-    try {
-      await api.put(`/admin/snippets/${editingKey}`, editValues);
-      setEditingKey(null);
-      refetch();
-    } catch {
-      alert(t('error'));
-    } finally {
-      setSaving(false);
-    }
+    try { await api.put(`/admin/snippets/${editingKey}`, editValues); setEditingKey(null); refetch(); }
+    catch { alert(t('error')); }
+    finally { setSaving(false); }
   };
 
-  if (loading) return <p>{t('loading')}</p>;
+  if (loading) return <p style={{ padding: 20, color: colors.muted }}>{t('loading')}</p>;
 
   return (
     <div>
-      <h1 style={{ fontFamily: fonts.heading, color: colors.primary, margin: '0 0 20px' }}>{t('nav_snippets')}</h1>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <h1 className="page-title" style={{ fontFamily: fonts.heading }}>{t('nav_snippets')}</h1>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {snippets?.map((s) => (
-          <div key={s.key} style={{ background: colors.white, border: `1px solid ${colors.gold}`, borderRadius: 8, padding: 16 }}>
-            <div style={{ fontWeight: 600, color: colors.primary, marginBottom: 8, fontFamily: 'monospace' }}>
+          <div key={s.key} className="mobile-card">
+            <div style={{ fontWeight: 600, color: colors.primary, marginBottom: 8, fontFamily: 'monospace', fontSize: 13 }}>
               {s.key}
             </div>
-
             {editingKey === s.key ? (
               <>
-                <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
-                  <label>
-                    <span style={labelStyle}>{t('snippets_value_ar')}</span>
-                    <textarea value={editValues.value_ar} onChange={e => setEditValues({ ...editValues, value_ar: e.target.value })}
-                      dir="rtl" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-                  </label>
-                  <label>
-                    <span style={labelStyle}>{t('snippets_value_ru')}</span>
-                    <textarea value={editValues.value_ru} onChange={e => setEditValues({ ...editValues, value_ru: e.target.value })}
-                      dir="ltr" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-                  </label>
-                  <label>
-                    <span style={labelStyle}>{t('snippets_value_en')}</span>
-                    <textarea value={editValues.value_en} onChange={e => setEditValues({ ...editValues, value_en: e.target.value })}
-                      dir="ltr" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-                  </label>
+                <div className="form-group">
+                  <label className="form-label">{t('snippets_value_ar')}</label>
+                  <textarea value={editValues.value_ar} onChange={e => setEditValues({ ...editValues, value_ar: e.target.value })}
+                    dir="rtl" rows={3} className="form-input" style={{ resize: 'vertical' }} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t('snippets_value_ru')}</label>
+                  <textarea value={editValues.value_ru} onChange={e => setEditValues({ ...editValues, value_ru: e.target.value })}
+                    dir="ltr" rows={3} className="form-input" style={{ resize: 'vertical' }} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t('snippets_value_en')}</label>
+                  <textarea value={editValues.value_en} onChange={e => setEditValues({ ...editValues, value_en: e.target.value })}
+                    dir="ltr" rows={3} className="form-input" style={{ resize: 'vertical' }} />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={handleSave} disabled={saving}
-                    style={{ padding: '6px 20px', border: 'none', borderRadius: 6, background: colors.primary, color: colors.white, cursor: 'pointer', fontSize: 13 }}>
+                  <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>
                     {saving ? t('loading') : t('save')}
                   </button>
-                  <button onClick={() => setEditingKey(null)}
-                    style={{ padding: '6px 20px', border: `1px solid ${colors.border}`, borderRadius: 6, background: 'transparent', cursor: 'pointer', fontSize: 13 }}>
+                  <button onClick={() => setEditingKey(null)} className="btn btn-secondary" style={{ flex: 1 }}>
                     {t('cancel')}
                   </button>
                 </div>
               </>
             ) : (
-              <div>
-                <div style={{ marginBottom: 4, direction: 'rtl' }}><strong>AR:</strong> {s.value_ar}</div>
-                <div style={{ marginBottom: 4 }}><strong>RU:</strong> {s.value_ru || '—'}</div>
-                <div style={{ marginBottom: 8 }}><strong>EN:</strong> {s.value_en || '—'}</div>
-                <button onClick={() => startEdit(s)}
-                  style={{ color: colors.primary, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}>
+              <>
+                <div style={{ marginBottom: 4, direction: 'rtl', fontSize: 14, lineHeight: 1.7 }}>
+                  <span style={{ color: colors.muted, fontSize: 12 }}>AR: </span>{s.value_ar}
+                </div>
+                <div style={{ marginBottom: 4, fontSize: 14 }}>
+                  <span style={{ color: colors.muted, fontSize: 12 }}>RU: </span>{s.value_ru || '—'}
+                </div>
+                <div style={{ marginBottom: 8, fontSize: 14 }}>
+                  <span style={{ color: colors.muted, fontSize: 12 }}>EN: </span>{s.value_en || '—'}
+                </div>
+                <button onClick={() => startEdit(s)} className="btn btn-ghost" style={{ padding: '6px 0' }}>
                   Edit
                 </button>
-              </div>
+              </>
             )}
           </div>
         ))}
@@ -94,6 +87,3 @@ export default function Snippets() {
     </div>
   );
 }
-
-const labelStyle: React.CSSProperties = { fontSize: 13, color: '#7A6E5C', display: 'block', marginBottom: 3 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid #D4C5A9', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' };

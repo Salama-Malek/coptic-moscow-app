@@ -12,15 +12,15 @@ export default function MyAccount() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  const adminStr = localStorage.getItem('admin_user');
+  const admin = adminStr ? JSON.parse(adminStr) : null;
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
     try {
-      await api.post('/admin/me/password', {
-        current_password: currentPassword,
-        new_password: newPassword,
-      });
+      await api.post('/admin/me/password', { current_password: currentPassword, new_password: newPassword });
       setMessage(t('success'));
       setCurrentPassword('');
       setNewPassword('');
@@ -33,23 +33,29 @@ export default function MyAccount() {
     }
   };
 
-  const adminStr = localStorage.getItem('admin_user');
-  const admin = adminStr ? JSON.parse(adminStr) : null;
-
   return (
     <div>
-      <h1 style={{ fontFamily: fonts.heading, color: colors.primary, margin: '0 0 20px' }}>{t('nav_my_account')}</h1>
+      <h1 className="page-title" style={{ fontFamily: fonts.heading }}>{t('nav_my_account')}</h1>
 
       {admin && (
-        <div style={{ background: colors.white, border: `1px solid ${colors.gold}`, borderRadius: 8, padding: 20, marginBottom: 20 }}>
-          <p><strong>{t('team_display_name')}:</strong> {admin.display_name}</p>
-          <p><strong>{t('email')}:</strong> {admin.email}</p>
-          <p><strong>{t('team_role')}:</strong> {admin.role}</p>
+        <div className="mobile-card" style={{ marginBottom: 16 }}>
+          <div className="mobile-card-row">
+            <span className="mobile-card-label">{t('team_display_name')}</span>
+            <span className="mobile-card-value">{admin.display_name}</span>
+          </div>
+          <div className="mobile-card-row">
+            <span className="mobile-card-label">{t('email')}</span>
+            <span className="mobile-card-value" style={{ direction: 'ltr' }}>{admin.email}</span>
+          </div>
+          <div className="mobile-card-row">
+            <span className="mobile-card-label">{t('team_role')}</span>
+            <span className="mobile-card-value">{admin.role}</span>
+          </div>
         </div>
       )}
 
-      <div style={{ background: colors.white, border: `1px solid ${colors.gold}`, borderRadius: 8, padding: 20, maxWidth: 400 }}>
-        <h3 style={{ color: colors.primary, margin: '0 0 16px' }}>{t('change_password')}</h3>
+      <div className="mobile-card" style={{ maxWidth: 420 }}>
+        <h3 style={{ color: colors.primary, margin: '0 0 16px', fontSize: 16 }}>{t('change_password')}</h3>
 
         {message && (
           <div style={{
@@ -62,20 +68,17 @@ export default function MyAccount() {
         )}
 
         <form onSubmit={handleChangePassword}>
-          <label style={{ display: 'block', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('current_password')}</span>
+          <div className="form-group">
+            <label className="form-label">{t('current_password')}</label>
             <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
-              required dir="ltr"
-              style={{ width: '100%', padding: '8px 10px', border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }} />
-          </label>
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: colors.muted, display: 'block', marginBottom: 3 }}>{t('new_password')}</span>
+              required dir="ltr" className="form-input" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">{t('new_password')}</label>
             <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-              required minLength={8} dir="ltr"
-              style={{ width: '100%', padding: '8px 10px', border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }} />
-          </label>
-          <button type="submit" disabled={loading}
-            style={{ padding: '10px 24px', border: 'none', borderRadius: 6, background: colors.primary, color: colors.white, cursor: 'pointer' }}>
+              required minLength={8} dir="ltr" className="form-input" />
+          </div>
+          <button type="submit" disabled={loading} className="btn btn-primary btn-block">
             {loading ? t('loading') : t('save')}
           </button>
         </form>
