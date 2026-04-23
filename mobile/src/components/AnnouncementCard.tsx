@@ -9,9 +9,11 @@ import type { AnnouncementData } from '../lib/api';
 
 interface Props {
   announcement: AnnouncementData;
+  /** When true, truncate the body to 3 lines (use on summary screens like Home). Defaults to false — Inbox shows full text. */
+  compact?: boolean;
 }
 
-export default function AnnouncementCard({ announcement }: Props) {
+export default function AnnouncementCard({ announcement, compact = false }: Props) {
   const { theme } = useTheme();
   const { i18n } = useTranslation();
   const lang = i18n.language as Language;
@@ -101,7 +103,7 @@ export default function AnnouncementCard({ announcement }: Props) {
             ...theme.typography.body,
           },
         ]}
-        numberOfLines={4}
+        {...(compact ? { numberOfLines: 3 } : {})}
       >
         {body}
       </Text>

@@ -130,7 +130,7 @@ export default function HomeScreen() {
           fontFamily={fonts.bodyBold}
         />
         {recentAnnouncements.length > 0 ? (
-          recentAnnouncements.map((a) => <AnnouncementCard key={a.id} announcement={a} />)
+          recentAnnouncements.map((a) => <AnnouncementCard key={a.id} announcement={a} compact />)
         ) : (
           <View style={{ marginTop: theme.spacing.sm }}>
             <EmptyState icon={Inbox} title={t('no_announcements')} />
