@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, StyleSheet, RefreshControl } from 'react-native';
+import { RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../theme/colors';
+import { Inbox } from 'lucide-react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { Screen } from '../components/ui/Screen';
+import { EmptyState } from '../components/ui/EmptyState';
 import { getItem, setItem } from '../lib/storage';
 import { fetchAnnouncements, AnnouncementData } from '../lib/api';
 import AnnouncementCard from '../components/AnnouncementCard';
 
 export default function InboxScreen() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [announcements, setAnnouncements] = useState<AnnouncementData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -16,11 +20,8 @@ export default function InboxScreen() {
   }, []);
 
   const loadInbox = async () => {
-    // Load from cache first
     const cached = await getItem<AnnouncementData[]>('inbox');
     if (cached) setAnnouncements(cached);
-
-    // Then fetch fresh data
     await refresh();
   };
 
@@ -40,35 +41,22 @@ export default function InboxScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
+    <Screen
+      title={t('inbox')}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={refresh}
+          tintColor={theme.colors.primary}
+          colors={[theme.colors.primary]}
+        />
+      }
     >
-      <Text style={styles.title}>{t('inbox')}</Text>
       {announcements.length > 0 ? (
         announcements.map((a) => <AnnouncementCard key={a.id} announcement={a} />)
       ) : (
-        <Text style={styles.empty}>{t('no_announcements')}</Text>
+        <EmptyState icon={Inbox} title={t('no_announcements')} />
       )}
-    </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.parchment },
-  content: { padding: 16, paddingBottom: 32 },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 14,
-    paddingTop: 8,
-  },
-  empty: {
-    color: colors.muted,
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: 32,
-  },
-});

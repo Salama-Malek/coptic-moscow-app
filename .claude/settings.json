@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./node_modules/.bin/tsc --noEmit --jsx react --esModuleInterop --skipLibCheck --target es2020 --module esnext --moduleResolution bundler src/theme/*.ts)",
+      "Bash(./node_modules/.bin/tsc --noEmit --jsx react-native --esModuleInterop --skipLibCheck --target es2020 --module commonjs --moduleResolution node --lib es2020,dom src/theme/*.ts src/theme/*.tsx src/components/ui/*.tsx src/components/ui/*.ts)",
+      "Bash(./node_modules/.bin/tsc --noEmit --jsx react --esModuleInterop --skipLibCheck --target es2020 --module esnext --moduleResolution bundler --lib es2020,dom src/theme/*.ts src/components/ui/*.tsx src/components/ui/*.ts)",
+      "Bash(./node_modules/.bin/tsc --noEmit --jsx react-jsx --esModuleInterop --skipLibCheck --target es2020 --module esnext --moduleResolution bundler --lib es2020,dom src/theme/*.ts src/components/ui/*.tsx src/components/ui/*.ts)",
+      "Bash(./node_modules/.bin/tsc --noEmit -p tsconfig.verify.json)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Read(//home/salama-malek/Downloads/Church Apps/coptic-moscow-server/**)"
+    ],
+    "additionalDirectories": [
+      "/home/salama-malek/Downloads/Church Apps/coptic-moscow-server"
+    ]
+  }
+}

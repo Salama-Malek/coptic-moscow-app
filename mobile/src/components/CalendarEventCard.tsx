@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../theme/colors';
+import { Clock } from 'lucide-react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { getFontFamily, type Language } from '../theme/fonts';
 import type { ExpandedOccurrence } from '../lib/rrule';
 
 interface Props {
@@ -9,38 +11,109 @@ interface Props {
 }
 
 export default function CalendarEventCard({ occurrence }: Props) {
+  const { theme } = useTheme();
   const { i18n } = useTranslation();
-  const lang = i18n.language as 'ar' | 'ru' | 'en';
+  const lang = i18n.language as Language;
+  const fonts = getFontFamily(lang);
   const { event, date } = occurrence;
 
-  const title = lang === 'ru' ? (event.title_ru || event.title_ar)
-    : lang === 'en' ? (event.title_en || event.title_ar)
-    : event.title_ar;
+  const title =
+    lang === 'ru'
+      ? event.title_ru || event.title_ar
+      : lang === 'en'
+      ? event.title_en || event.title_ar
+      : event.title_ar;
+
+  const dayStr = date.getDate();
+  const monthStr = date.toLocaleDateString(
+    lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
+    { month: 'short' },
+  );
 
   const dateStr = date.toLocaleDateString(
     lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
-    { weekday: 'long', month: 'long', day: 'numeric' }
+    { weekday: 'long' },
   );
 
-  const timeStr = event.duration_minutes > 0
-    ? date.toLocaleTimeString(
-        lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
-        { hour: '2-digit', minute: '2-digit' }
-      )
-    : '';
+  const timeStr =
+    event.duration_minutes > 0
+      ? date.toLocaleTimeString(
+          lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
+          { hour: '2-digit', minute: '2-digit' },
+        )
+      : '';
 
   return (
-    <View style={styles.card}>
-      <View style={styles.dateColumn}>
-        <Text style={styles.dayNumber}>{date.getDate()}</Text>
-        <Text style={styles.month}>
-          {date.toLocaleDateString(lang === 'ar' ? 'ar-EG' : lang, { month: 'short' })}
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          borderRadius: theme.radius.md,
+          ...theme.shadows.sm,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.dateColumn,
+          { backgroundColor: theme.colors.primary },
+        ]}
+      >
+        <Text
+          style={[
+            styles.dayNumber,
+            { color: theme.colors.gold, fontFamily: fonts.heading },
+          ]}
+        >
+          {dayStr}
+        </Text>
+        <Text
+          style={[
+            styles.month,
+            { color: theme.colors.white, fontFamily: fonts.bodyBold },
+          ]}
+        >
+          {monthStr}
         </Text>
       </View>
+
       <View style={styles.content}>
-        <Text style={[styles.title, { writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }]}>{title}</Text>
-        <Text style={styles.meta}>{dateStr}</Text>
-        {timeStr ? <Text style={styles.meta}>{timeStr}</Text> : null}
+        <Text
+          style={[
+            styles.title,
+            {
+              color: theme.colors.ink,
+              fontFamily: fonts.bodyBold,
+              ...theme.typography.h3,
+            },
+          ]}
+          numberOfLines={2}
+        >
+          {title}
+        </Text>
+        <Text
+          style={[
+            styles.meta,
+            { color: theme.colors.inkMuted, fontFamily: fonts.body },
+          ]}
+        >
+          {dateStr}
+        </Text>
+        {timeStr ? (
+          <View style={styles.timeRow}>
+            <Clock size={13} color={theme.colors.inkFaint} strokeWidth={1.75} />
+            <Text
+              style={[
+                styles.time,
+                { color: theme.colors.inkFaint, fontFamily: fonts.body },
+              ]}
+            >
+              {timeStr}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -50,40 +123,44 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: colors.gold,
-    borderRadius: 8,
-    backgroundColor: colors.white,
-    marginBottom: 10,
+    marginBottom: 12,
     overflow: 'hidden',
   },
   dateColumn: {
-    width: 54,
-    backgroundColor: colors.primary,
+    width: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   dayNumber: {
-    color: colors.gold,
-    fontSize: 22,
+    fontSize: 26,
+    lineHeight: 30,
     fontWeight: '700',
   },
   month: {
-    color: 'rgba(255,255,255,0.8)',
     fontSize: 11,
+    marginTop: 2,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   content: {
     flex: 1,
-    padding: 12,
+    padding: 14,
+    gap: 4,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   meta: {
     fontSize: 13,
-    color: colors.muted,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  time: {
+    fontSize: 13,
   },
 });

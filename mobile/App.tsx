@@ -25,6 +25,7 @@ import { registerDevice, heartbeat, fetchCalendar, fetchAnnouncements, CalendarE
 import { expandEvents } from './src/lib/rrule';
 import TabNavigator from './src/navigation/TabNavigator';
 import LanguagePickerScreen from './src/screens/LanguagePickerScreen';
+import { ThemeProvider } from './src/theme/ThemeProvider';
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
@@ -143,17 +144,21 @@ export default function App() {
 
   if (showLanguagePicker) {
     return (
-      <SafeAreaProvider onLayout={onLayoutRootView}>
-        <LanguagePickerScreen onDone={handleFirstLaunchDone} />
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <SafeAreaProvider onLayout={onLayoutRootView}>
+          <LanguagePickerScreen onDone={handleFirstLaunchDone} />
+        </SafeAreaProvider>
+      </ThemeProvider>
     );
   }
 
   return (
-    <SafeAreaProvider onLayout={onLayoutRootView}>
-      <NavigationContainer>
-        <TabNavigator />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider onLayout={onLayoutRootView}>
+        <NavigationContainer>
+          <TabNavigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }

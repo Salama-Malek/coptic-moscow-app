@@ -45,7 +45,15 @@
       "Bash(eas diagnostics:*)",
       "Bash(eas build:*)",
       "Bash(eas build:view 6cf19385-6d97-4ece-9c7c-9debbdc43685 --json)",
-      "WebFetch(domain:job-logs.eascdn.net)"
+      "WebFetch(domain:job-logs.eascdn.net)",
+      "Edit(/.claude/skills/design-tokens-audit/**)",
+      "Edit(/.claude/skills/notification-preview/**)",
+      "Edit(/.claude/skills/pr-preflight/**)",
+      "Edit(/.claude/skills/admin-component/**)",
+      "Edit(/.claude/skills/redesign-screen/**)",
+      "Bash(npx --package typescript tsc --noEmit --jsx react-native --esModuleInterop --skipLibCheck --target es2020 --module commonjs --moduleResolution node mobile/src/theme/*.ts mobile/src/theme/*.tsx)",
+      "Bash(npx --package typescript tsc --noEmit --jsx react --esModuleInterop --skipLibCheck --target es2020 --module esnext --moduleResolution bundler server/admin-web/src/theme/*.ts)",
+      "Bash(./node_modules/.bin/tsc --noEmit --jsx react-native --esModuleInterop --skipLibCheck --target es2020 --module commonjs --moduleResolution node --lib es2020,dom src/theme/*.ts src/theme/*.tsx)"
     ]
   }
 }

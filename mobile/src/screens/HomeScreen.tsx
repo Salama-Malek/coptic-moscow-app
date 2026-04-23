@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../theme/colors';
+import { Sunrise, CalendarClock, BellRing, Inbox, type LucideIcon } from 'lucide-react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { getFontFamily, type Language } from '../theme/fonts';
+import { Screen } from '../components/ui/Screen';
+import { EmptyState } from '../components/ui/EmptyState';
 import { getItem } from '../lib/storage';
 import { expandEvents, ExpandedOccurrence } from '../lib/rrule';
 import { CalendarEventData, AnnouncementData } from '../lib/api';
@@ -11,6 +15,10 @@ import CopticCross from '../components/CopticCross';
 
 export default function HomeScreen() {
   const { t, i18n } = useTranslation();
+  const { theme } = useTheme();
+  const lang = (i18n.language as Language) || 'ar';
+  const fonts = getFontFamily(lang);
+
   const [todayEvents, setTodayEvents] = useState<ExpandedOccurrence[]>([]);
   const [nextEvent, setNextEvent] = useState<ExpandedOccurrence | null>(null);
   const [recentAnnouncements, setRecentAnnouncements] = useState<AnnouncementData[]>([]);
@@ -27,10 +35,10 @@ export default function HomeScreen() {
       const todayEnd = new Date(now);
       todayEnd.setHours(23, 59, 59, 999);
 
-      const today = expanded.filter(o => o.date >= now && o.date <= todayEnd);
+      const today = expanded.filter((o) => o.date >= now && o.date <= todayEnd);
       setTodayEvents(today);
 
-      const next = expanded.find(o => o.date > now);
+      const next = expanded.find((o) => o.date > now);
       setNextEvent(next || null);
     }
 
@@ -40,72 +48,139 @@ export default function HomeScreen() {
     }
   };
 
-  const isRTL = i18n.language === 'ar';
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <CopticCross size={40} />
-        <Text style={[styles.headerTitle, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
-          {t('app_name')}
-        </Text>
+    <Screen scrollable padded={false}>
+      {/* Hero header — cross + app name */}
+      <View
+        style={[
+          styles.hero,
+          {
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.lg,
+            paddingBottom: theme.spacing.xl,
+            gap: theme.spacing.md,
+          },
+        ]}
+      >
+        <CopticCross size={44} color={theme.colors.gold} />
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[
+              {
+                color: theme.colors.ink,
+                fontFamily: fonts.heading,
+                ...theme.typography.h1,
+              },
+            ]}
+          >
+            {t('app_name')}
+          </Text>
+          <View
+            style={[
+              styles.goldRule,
+              { backgroundColor: theme.colors.gold, marginTop: 6 },
+            ]}
+          />
+        </View>
       </View>
 
-      {/* Today's services */}
-      <Text style={styles.sectionTitle}>{t('today_services')}</Text>
-      {todayEvents.length > 0 ? (
-        todayEvents.map((occ, i) => <CalendarEventCard key={i} occurrence={occ} />)
-      ) : (
-        <Text style={styles.emptyText}>{t('no_services_today')}</Text>
-      )}
+      <View style={{ paddingHorizontal: theme.spacing.lg }}>
+        {/* Today's services */}
+        <SectionHeader
+          icon={Sunrise}
+          label={t('today_services')}
+          color={theme.colors.primary}
+          fontFamily={fonts.bodyBold}
+        />
+        {todayEvents.length > 0 ? (
+          todayEvents.map((occ, i) => <CalendarEventCard key={i} occurrence={occ} />)
+        ) : (
+          <Text
+            style={[
+              styles.emptyLine,
+              {
+                color: theme.colors.inkMuted,
+                fontFamily: fonts.body,
+                ...theme.typography.body,
+              },
+            ]}
+          >
+            {t('no_services_today')}
+          </Text>
+        )}
 
-      {/* Next upcoming */}
-      {nextEvent && (
-        <>
-          <Text style={styles.sectionTitle}>{t('next_event')}</Text>
-          <CalendarEventCard occurrence={nextEvent} />
-        </>
-      )}
+        {/* Next upcoming */}
+        {nextEvent && (
+          <>
+            <SectionHeader
+              icon={CalendarClock}
+              label={t('next_event')}
+              color={theme.colors.primary}
+              fontFamily={fonts.bodyBold}
+            />
+            <CalendarEventCard occurrence={nextEvent} />
+          </>
+        )}
 
-      {/* Recent announcements */}
-      <Text style={styles.sectionTitle}>{t('recent_announcements')}</Text>
-      {recentAnnouncements.length > 0 ? (
-        recentAnnouncements.map((a) => <AnnouncementCard key={a.id} announcement={a} />)
-      ) : (
-        <Text style={styles.emptyText}>{t('no_announcements')}</Text>
-      )}
-    </ScrollView>
+        {/* Recent announcements */}
+        <SectionHeader
+          icon={BellRing}
+          label={t('recent_announcements')}
+          color={theme.colors.primary}
+          fontFamily={fonts.bodyBold}
+        />
+        {recentAnnouncements.length > 0 ? (
+          recentAnnouncements.map((a) => <AnnouncementCard key={a.id} announcement={a} />)
+        ) : (
+          <View style={{ marginTop: theme.spacing.sm }}>
+            <EmptyState icon={Inbox} title={t('no_announcements')} />
+          </View>
+        )}
+      </View>
+    </Screen>
+  );
+}
+
+type SectionHeaderProps = {
+  icon: LucideIcon;
+  label: string;
+  color: string;
+  fontFamily: string;
+};
+
+function SectionHeader({ icon: Icon, label, color, fontFamily }: SectionHeaderProps) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Icon size={18} color={color} strokeWidth={1.75} />
+      <Text style={[styles.sectionLabel, { color, fontFamily }]}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.parchment },
-  content: { padding: 16, paddingBottom: 32 },
-  header: {
+  hero: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
-    paddingTop: 8,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.primary,
-    flex: 1,
+  goldRule: {
+    height: 2,
+    width: 48,
+    borderRadius: 1,
   },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.primary,
-    marginTop: 16,
-    marginBottom: 10,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 24,
+    marginBottom: 12,
   },
-  emptyText: {
-    color: colors.muted,
-    fontSize: 14,
-    textAlign: 'center',
+  sectionLabel: {
+    fontSize: 13,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  emptyLine: {
     paddingVertical: 16,
+    textAlign: 'center',
   },
 });

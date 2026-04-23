@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../theme/colors';
+import { AlertTriangle, BellRing, Calendar } from 'lucide-react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { getFontFamily, type Language } from '../theme/fonts';
+import { Card } from './ui/Card';
 import type { AnnouncementData } from '../lib/api';
 
 interface Props {
@@ -9,80 +12,149 @@ interface Props {
 }
 
 export default function AnnouncementCard({ announcement }: Props) {
+  const { theme } = useTheme();
   const { i18n } = useTranslation();
-  const lang = i18n.language as 'ar' | 'ru' | 'en';
+  const lang = i18n.language as Language;
+  const fonts = getFontFamily(lang);
 
-  const title = lang === 'ru' ? (announcement.title_ru || announcement.title_ar)
-    : lang === 'en' ? (announcement.title_en || announcement.title_ar)
-    : announcement.title_ar;
+  const title =
+    lang === 'ru'
+      ? announcement.title_ru || announcement.title_ar
+      : lang === 'en'
+      ? announcement.title_en || announcement.title_ar
+      : announcement.title_ar;
 
-  const body = lang === 'ru' ? (announcement.body_ru || announcement.body_ar)
-    : lang === 'en' ? (announcement.body_en || announcement.body_ar)
-    : announcement.body_ar;
+  const body =
+    lang === 'ru'
+      ? announcement.body_ru || announcement.body_ar
+      : lang === 'en'
+      ? announcement.body_en || announcement.body_ar
+      : announcement.body_ar;
 
   const date = announcement.sent_at
-    ? new Date(announcement.sent_at).toLocaleDateString(lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US')
+    ? new Date(announcement.sent_at).toLocaleDateString(
+        lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
+        { month: 'short', day: 'numeric', year: 'numeric' },
+      )
     : '';
 
+  const isCritical = announcement.priority === 'critical';
+  const isHigh = announcement.priority === 'high';
+
+  const Icon = isCritical ? AlertTriangle : BellRing;
+  const iconColor = isCritical ? theme.colors.error : theme.colors.gold;
+
   return (
-    <View style={styles.card}>
+    <Card
+      padding="lg"
+      elevation="sm"
+      goldAccent={isHigh || isCritical}
+      style={{ marginBottom: theme.spacing.md }}
+    >
       <View style={styles.header}>
-        <Text style={[styles.title, { writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }]}>{title}</Text>
-        {announcement.priority === 'critical' && (
-          <View style={styles.criticalBadge}><Text style={styles.criticalText}>!</Text></View>
+        <View
+          style={[
+            styles.iconBadge,
+            {
+              backgroundColor: isCritical ? theme.colors.errorSoft : theme.colors.surface,
+              borderColor: iconColor,
+            },
+          ]}
+        >
+          <Icon size={18} color={iconColor} strokeWidth={1.75} />
+        </View>
+        <Text
+          style={[
+            styles.title,
+            {
+              color: theme.colors.ink,
+              fontFamily: fonts.bodyBold,
+              ...theme.typography.h3,
+            },
+          ]}
+          numberOfLines={2}
+        >
+          {title}
+        </Text>
+        {isCritical && (
+          <View style={[styles.criticalPill, { backgroundColor: theme.colors.error }]}>
+            <Text
+              style={{
+                color: theme.colors.white,
+                fontSize: 10,
+                fontFamily: fonts.bodyBold,
+                letterSpacing: 0.5,
+              }}
+            >
+              !
+            </Text>
+          </View>
         )}
       </View>
-      <Text style={[styles.body, { writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }]} numberOfLines={4}>
+
+      <Text
+        style={[
+          styles.body,
+          {
+            color: theme.colors.ink,
+            fontFamily: fonts.body,
+            ...theme.typography.body,
+          },
+        ]}
+        numberOfLines={4}
+      >
         {body}
       </Text>
-      <Text style={styles.date}>{date}</Text>
-    </View>
+
+      {date ? (
+        <View style={styles.dateRow}>
+          <Calendar size={13} color={theme.colors.inkFaint} strokeWidth={1.75} />
+          <Text
+            style={{
+              color: theme.colors.inkFaint,
+              fontFamily: fonts.body,
+              ...theme.typography.caption,
+            }}
+          >
+            {date}
+          </Text>
+        </View>
+      ) : null}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderColor: colors.gold,
-    borderRadius: 8,
-    padding: 14,
-    backgroundColor: colors.white,
-    marginBottom: 10,
-  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    gap: 10,
+    marginBottom: 8,
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
     flex: 1,
   },
-  body: {
-    fontSize: 14,
-    color: colors.ink,
-    lineHeight: 22,
-    marginBottom: 6,
-  },
-  date: {
-    fontSize: 12,
-    color: colors.muted,
-  },
-  criticalBadge: {
+  criticalPill: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.error,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginStart: 8,
+    justifyContent: 'center',
   },
-  criticalText: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: 14,
+  body: {
+    marginBottom: 10,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
 });
