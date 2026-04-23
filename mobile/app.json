@@ -28,7 +28,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7F1E6"
       },
-      "package": "church.copticmoscow.app"
+      "package": "church.copticmoscow.app",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [
