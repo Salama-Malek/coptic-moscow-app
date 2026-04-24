@@ -3,8 +3,8 @@ import { AppState, AppStateStatus, I18nManager, Platform } from 'react-native';
 import { NavigationContainer, type LinkingOptions } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
+import messaging from '@react-native-firebase/messaging';
 
 import { useFonts, Amiri_400Regular, Amiri_700Bold } from '@expo-google-fonts/amiri';
 import { NotoNaskhArabic_400Regular, NotoNaskhArabic_600SemiBold } from '@expo-google-fonts/noto-naskh-arabic';
@@ -21,6 +21,7 @@ import {
   requestPermissions,
   getDevicePushToken,
   scheduleServiceReminders,
+  handleIncomingFcm,
 } from './src/lib/notifications';
 import { registerDevice, heartbeat, fetchCalendar, fetchAnnouncements, CalendarEventData } from './src/lib/api';
 import { expandEvents } from './src/lib/rrule';
@@ -44,13 +45,12 @@ const linking: LinkingOptions<ReactNavigation.RootParamList> = {
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
-// Foreground notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+// Background FCM handler — must be registered at module scope so it fires even
+// when the app is killed. Notifee builds the bubble notification from the data
+// payload; the system never auto-displays (we send data-only messages from the
+// backend so we have full control over the notification).
+messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+  await handleIncomingFcm(remoteMessage);
 });
 
 export default function App() {
@@ -84,6 +84,16 @@ export default function App() {
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Foreground FCM listener — when a message arrives while the app is open,
+  // build the bubble notification ourselves (the system would otherwise do
+  // nothing with data-only messages).
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      await handleIncomingFcm(remoteMessage);
+    });
+    return unsubscribe;
   }, []);
 
   const initialize = async () => {
