@@ -188,7 +188,7 @@ These turn the app from "open when a push lands" into "open every morning." This
 - **Key decisions:** Text sourcing (St Macarius Monastery publishes CC-licensed translations; Russian translations by Fr Sergei Timashev exist). Audio: licensed or crowd-recorded by Abouna.
 - **Why L not M:** the content pipeline (copyright clearance, AR/RU/EN alignment, audio sync if pursued) is most of the work. The UI is straightforward.
 
-#### [ ] G2 — Fasting calendar with daily meal guidance `value: 5 · effort: S · fit: 5 · strategic: 5`
+#### [x] G2 — Fasting calendar with daily meal guidance `value: 5 · effort: S · fit: 5 · strategic: 5`  ✅ v1 shipped (meal guidance deferred)
 - **What:** Every day marked with its fasting type (Strict / Wine+Oil / Fish Allowed / Non-fast). Tap a day → what's permitted + common Coptic breakfast/lunch/dinner ideas. Ramadan-style daily tile on Home.
 - **Why it fits:** Coptic church fasts >210 days/year. Diaspora parishioners constantly Google "is today a fast?" No single reliable source in Russian.
 - **Why S:** Content is static, rule-based (movable + fixed feasts). Data ships bundled in the app; zero server dependency. Calculation engine is public-domain.
@@ -385,3 +385,12 @@ LIMIT 5;
   - Locale keys `sys_*` + `nav_system_health` added to all three admin-web locales (parity preserved, new total 113/113/113).
   - Bundle impact: +19 KB raw / +6 KB gzipped. Clean `tsc --noEmit` + successful `vite build`.
   - Closes the loop on C2 — Abouna now has a visible retry path for silent-FCM-failure rows.
+- **2026-04-24** — **G2 Fasting calendar v1 shipped**:
+  - Pure calc engine at `mobile/src/lib/fasting.ts` — Orthodox Pascha via Meeus Julian-Paschalion formula (+13 days Julian→Gregorian offset for 21st century), sanity-checked against 2025/2026 Pascha dates. All major Coptic fast periods implemented: Great Lent + Holy Week, Jonah/Nineveh Fast, Apostles' Fast, Dormition Fast (Aug 7-21), Nativity Fast (Nov 25 - Jan 6), weekly Wed/Fri, Pentecost period exemption, major-feast overrides (Nativity, Theophany, Annunciation, Palm Sunday, Pascha, Bright Week, Ascension, Pentecost, Transfiguration, Dormition, Nayrouz, Cross, Presentation).
+  - Four fast types: `strict` / `wine_oil` / `fish` / `none`. Sat/Sun during Great Lent relaxed to `wine_oil`.
+  - `mobile/src/screens/FastingScreen.tsx` — today tile, month grid with color-coded dots, weekday labels respecting locale (AR/RU/EN), prev/next month navigation, tap-to-select detail, legend.
+  - `mobile/src/components/FastingTile.tsx` — Home screen tile with today's status + chevron, navigates to full screen.
+  - Navigation: added `@react-navigation/native-stack`, created `RootNavigator` wrapping `TabNavigator` + `FastingScreen`. Updated linking config — deep-link path `copticmoscow://fasting` now routes correctly alongside existing tab deep-links.
+  - i18n: 33 new keys (fast_type_*, fast_period_*, feast_*, fasting_*) in all three locales. Parity 64/64/64.
+  - `tsc --noEmit` clean on mobile (via verify config) + server + admin-web unaffected.
+  - **Next for G2 (deferred):** meal guidance tiles per day (what's allowed today), admin override for Abouna to mark specific parish-level adjustments, background push "Today is a fasting day" at sunrise for opted-in users.

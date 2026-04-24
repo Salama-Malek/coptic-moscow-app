@@ -25,7 +25,7 @@ import {
 } from './src/lib/notifications';
 import { registerDevice, heartbeat, fetchCalendar, fetchAnnouncements, CalendarEventData } from './src/lib/api';
 import { expandEvents } from './src/lib/rrule';
-import TabNavigator from './src/navigation/TabNavigator';
+import RootNavigator from './src/navigation/RootNavigator';
 import LanguagePickerScreen from './src/screens/LanguagePickerScreen';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
@@ -35,10 +35,15 @@ const linking: LinkingOptions<ReactNavigation.RootParamList> = {
   prefixes: [Linking.createURL('/'), 'copticmoscow://'],
   config: {
     screens: {
-      Home: 'home',
-      Calendar: 'calendar',
-      Inbox: 'inbox',
-      Settings: 'settings',
+      Tabs: {
+        screens: {
+          Home: 'home',
+          Calendar: 'calendar',
+          Inbox: 'inbox',
+          Settings: 'settings',
+        },
+      },
+      Fasting: 'fasting',
     },
   },
 };
@@ -207,7 +212,7 @@ export default function App() {
       <ThemeProvider>
         <SafeAreaProvider onLayout={onLayoutRootView}>
           <NavigationContainer linking={linking}>
-            <TabNavigator />
+            <RootNavigator />
           </NavigationContainer>
         </SafeAreaProvider>
       </ThemeProvider>
