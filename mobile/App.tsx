@@ -28,6 +28,7 @@ import { expandEvents } from './src/lib/rrule';
 import TabNavigator from './src/navigation/TabNavigator';
 import LanguagePickerScreen from './src/screens/LanguagePickerScreen';
 import { ThemeProvider } from './src/theme/ThemeProvider';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 // Deep-link routing for Android app shortcuts (copticmoscow://inbox, etc.)
 const linking: LinkingOptions<ReactNavigation.RootParamList> = {
@@ -191,21 +192,25 @@ export default function App() {
 
   if (showLanguagePicker) {
     return (
-      <ThemeProvider>
-        <SafeAreaProvider onLayout={onLayoutRootView}>
-          <LanguagePickerScreen onDone={handleFirstLaunchDone} />
-        </SafeAreaProvider>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <SafeAreaProvider onLayout={onLayoutRootView}>
+            <LanguagePickerScreen onDone={handleFirstLaunchDone} />
+          </SafeAreaProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider onLayout={onLayoutRootView}>
-        <NavigationContainer linking={linking}>
-          <TabNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <SafeAreaProvider onLayout={onLayoutRootView}>
+          <NavigationContainer linking={linking}>
+            <TabNavigator />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

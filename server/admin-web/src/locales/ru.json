@@ -49,6 +49,10 @@
   "ann_preview_send": "Просмотр и отправка",
   "ann_confirm_send": "Подтвердить отправку",
   "ann_confirm_message": "Это объявление будет отправлено на {{count}} устройств",
+  "error_boundary_title": "Что-то пошло не так",
+  "error_boundary_body": "Произошла непредвиденная ошибка. Попробуйте перезагрузить страницу.",
+  "error_boundary_reload": "Перезагрузить",
+
   "ann_sent": "Отправлено",
   "ann_sending": "Отправляется…",
   "ann_send_failed": "Ошибка отправки",

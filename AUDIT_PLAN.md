@@ -14,6 +14,7 @@ Living checklist of every finding from the pre-launch audit. Each item is update
 | Critical bugs | 3 | — | — | **3 / 3** (C1, C2 coded; C3 runbook-only) |
 | High priority | — | 3 | — | **1 / 3** (H2 rate-limit shipped; role-check + H1 + H3 pending) |
 | Quick wins | — | — | 3 | **3 / 3** |
+| Observability | — | 4 | 3 | **5 / 10** (OB2, OB4, OB5, OB6, OB8 shipped; OB1/OB3/OB7/OB9/OB10 pending) |
 | Other | — | — | 5 | 0 / 5 |
 
 ---
@@ -86,6 +87,66 @@ Living checklist of every finding from the pre-launch audit. Each item is update
 - **File:** `server/src/routes/calendar.ts:14` (`publicQuerySchema`)
 - **Fix:** `z.string().datetime({ offset: true }).optional()` instead of raw `z.string().optional()`.
 - **Effort:** 10 min.
+
+---
+
+## Observability & ops
+
+Today's baseline (what exists):
+- Health check at `GET /api/health` — returns `{status:'ok'}` unconditionally. Does **not** check DB, Firebase init, or disk. A "healthy" response means nothing right now.
+- Global `unhandledRejection` + `uncaughtException` handlers in `server/src/index.ts:22-36` — good for post-mortem, but only visible in Hostinger's Runtime Logs tab.
+- `admin_audit_log` table — every mutation is logged with admin id, action, target, IP. Well-covered.
+- `send_log` table — per-announcement sent/failed counts. Exists but no dashboard queries it.
+- Per-route `console.error` + `console.log`. Unstructured; no request IDs; no timing.
+- No Sentry, no pino/winston, no metrics, no uptime monitor, no Express error-handler, no React error boundary.
+
+### [ ] OB1 — External uptime monitoring  `P1  effort: S (30 min, no code)`
+Hostinger's runtime logs don't alert. If the Node process crashes and restart fails, nobody knows until Abouna tries to send a notification and it fails silently.
+- **Fix:** Sign up for UptimeRobot free tier, add HTTPS check on `https://coptic-notify.sm4tech.com/api/health` at 5-min interval, SMS/email alert on 2-fail. Also add a ping on `/admin/` (verifies static serving works).
+- Zero code change. Just the operator setting up the account.
+
+### [x] OB2 — Health check should actually check  `P1  effort: S`  ✅ shipped
+- **Current:** `GET /api/health` returns `{status:'ok', timestamp}` with no checks.
+- **Fix:** Add `SELECT 1` DB probe (200ms timeout) + Firebase init flag + disk space on admin-web dist. Return `503` if any fail. This is what UptimeRobot watches.
+
+### [ ] OB3 — Sentry on all three surfaces  `P1  effort: M (3-4h one-time)`
+Without this, post-launch bugs are invisible. Abouna won't report "the app showed a white screen once" — but that's the signal that matters.
+- **Server:** `@sentry/node` in `index.ts` before route registration; Express error-handler with `Sentry.Handlers.errorHandler`. Capture in `cron.ts` and `fcm.ts` catches.
+- **Mobile:** `@sentry/react-native` with source maps uploaded via EAS; wrap App in `Sentry.ErrorBoundary`.
+- **Admin-web:** `@sentry/react` with `ErrorBoundary` at `<App />`.
+- All three use the same DSN from env var; tag events with `service=server|mobile|admin` and `release=package.json#version`.
+- **Free tier covers 5k events/month** — parish scale is nowhere near that.
+
+### [x] OB4 — Structured request logging with pino-http  `P2  effort: S`  ✅ shipped
+- **Current:** no request log at all. Can't tell which admin action triggered a 500.
+- **Fix:** `pino-http` with JSON output, request id propagated to audit log, redact Authorization header. Writes to stdout — Hostinger captures it.
+
+### [x] OB5 — Express error-handling middleware  `P1  effort: S`  ✅ shipped
+- **Current:** every route has its own `try/catch` + generic 500. Errors swallowed with a `console.error`.
+- **Fix:** Centralize. `app.use((err, req, res, next) => { logger.error({err, reqId}); Sentry.captureException(err); res.status(500).json(...) })`. Reduces per-route boilerplate; single place to reshape error responses.
+
+### [x] OB6 — React Error Boundary on admin-web and mobile  `P1  effort: S`  ✅ shipped
+- **Current:** neither client has one. Any unhandled render error = white screen with no diagnostic.
+- **Fix:** `<ErrorBoundary>` at the App root in both clients. Shows localized "Something went wrong — reload" and fires Sentry. Essential for Abouna's trust.
+
+### [ ] OB7 — Admin panel "System health" page  `P2  effort: M (half day)`
+Turn `send_log` + `admin_audit_log` + cron run records into a dashboard Abouna actually sees. Suggested tiles:
+- Active devices (7d / 30d trend sparkline)
+- Notifications delivered today / this week (from `send_log`)
+- Last cron run timestamp + result for `send-due` and `cleanup-tokens`
+- Recent `send_failed` announcements with a **Retry** button (uses H2's retry banner)
+- Last 10 audit log entries (who did what when)
+- Firebase init status, DB connection status, disk free on Hostinger
+
+### [x] OB8 — Cron run history table  `P2  effort: S`  ✅ shipped
+- **Current:** cron logs go to stdout only. No retrospective visibility.
+- **Fix:** `cron_runs` table — `id, job, started_at, ended_at, result_json, error`. Both cron routes write a row on entry + exit. Powers OB7 dashboard + helps diagnose "why did today's scheduled announcement not fire."
+
+### [ ] OB9 — FCM delivery alerting  `P2  effort: S (2h)`
+When an announcement has `sent_count=0` + `failed_count>0`, that's an operator-actionable event (service account expired, Firebase quota, etc.). Send an email/Telegram ping to super_admin. Parish-scale rate is maybe 1 announcement/day — email is fine, no PagerDuty needed.
+
+### [ ] OB10 — Mobile FCM token metrics  `P3  effort: S`
+Already have device_tokens + last_seen. Add admin-panel view: registered vs active (heartbeat <7d) over time, breakdown by language. Helps Abouna understand reach without guessing.
 
 ---
 
@@ -180,3 +241,12 @@ LIMIT 5;
   - QW2: `.max()` bounds on passwords (128), titles (200), bodies (4000), templates (4000), snippets (500), render values (2000), placeholder arrays (50).
   - QW3: `calendar.since` now ISO-datetime validated; `starts_at` also ISO-validated; description fields capped at 4000; duration/reminder minutes bounded.
   - All three tsc checks remain clean.
+- **2026-04-24** — **Observability launch-floor batch shipped**:
+  - OB2: `GET /api/health` now probes DB (`SELECT 1` with 1.5s timeout) and Firebase init state. Returns `503` when DB is down — what UptimeRobot actually needs to watch. New route file `server/src/routes/health.ts`; `isFirebaseInitialized()` exported from `services/fcm.ts`.
+  - OB4: `pino` + `pino-http` wired. Structured JSON lines in prod, pretty-printed in dev. `x-request-id` generated per request (echoed back in response header and included in error responses so admins can quote it). Auth, cron-secret, and password fields redacted via logger config. Health probes silenced from request log to avoid UptimeRobot noise.
+  - OB5: `express-async-errors` imported at the top of `index.ts`; `errorHandler` + `notFoundHandler` middleware added after all routes. Any route that throws async now lands in the centralized handler with request-id propagation. Existing per-route try/catch still works unchanged; this is a safety net.
+  - OB6: `ErrorBoundary` on both clients. Admin-web uses `withTranslation()` HOC + locale keys. Mobile uses `i18n.t()` directly + hardcoded theme values (documented: must render even if ThemeProvider itself crashed). Locale parity preserved: admin-web 80/80/80, mobile 31/31/31.
+  - OB8: Migration `003_cron_runs.sql` adds history table; `recordCronRun()` helper wraps each cron handler — writes a 'running' row on entry and flips to 'ok'/'error' with duration + result JSON on exit. Cron.ts now uses structured logger throughout.
+  - Server deps added: `pino`, `pino-http`, `express-async-errors`, `pino-pretty` (dev).
+  - `tsc --noEmit` clean on server + admin-web + mobile.
+  - **Deferred (need user action):** OB1 (UptimeRobot account), OB3 (Sentry DSN), OB7 (half-day admin dashboard), OB9 (needs SMTP transport decision).

@@ -31,5 +31,9 @@
 
   "select_language": "اختر اللغة",
   "welcome": "مرحبا بكم في الكنيسة القبطية الأرثوذكسية بموسكو",
-  "continue": "متابعة"
+  "continue": "متابعة",
+
+  "error_boundary_title": "حدث خطأ ما",
+  "error_boundary_body": "واجه التطبيق خطأً غير متوقع. حاول مرة أخرى.",
+  "error_boundary_reload": "حاول مرة أخرى"
 }

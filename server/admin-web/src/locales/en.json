@@ -49,6 +49,10 @@
   "ann_preview_send": "Preview & Send",
   "ann_confirm_send": "Confirm Send",
   "ann_confirm_message": "This announcement will be sent to {{count}} devices",
+  "error_boundary_title": "Something went wrong",
+  "error_boundary_body": "The page hit an unexpected error. Try reloading.",
+  "error_boundary_reload": "Reload",
+
   "ann_sent": "Sent",
   "ann_sending": "Sending…",
   "ann_send_failed": "Failed to send",

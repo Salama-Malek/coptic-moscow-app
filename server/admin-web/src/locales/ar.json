@@ -49,6 +49,10 @@
   "ann_preview_send": "معاينة وإرسال",
   "ann_confirm_send": "تأكيد الإرسال",
   "ann_confirm_message": "سيتم إرسال هذا الإعلان إلى {{count}} جهاز",
+  "error_boundary_title": "حدث خطأ ما",
+  "error_boundary_body": "واجهت الصفحة خطأً غير متوقع. حاول إعادة التحميل.",
+  "error_boundary_reload": "إعادة التحميل",
+
   "ann_sent": "مُرسَل",
   "ann_sending": "جارٍ الإرسال…",
   "ann_send_failed": "فشل الإرسال",
