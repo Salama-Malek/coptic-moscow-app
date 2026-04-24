@@ -50,6 +50,8 @@
   "ann_confirm_send": "تأكيد الإرسال",
   "ann_confirm_message": "سيتم إرسال هذا الإعلان إلى {{count}} جهاز",
   "ann_sent": "مُرسَل",
+  "ann_sending": "جارٍ الإرسال…",
+  "ann_send_failed": "فشل الإرسال",
   "ann_draft": "مسودة",
   "ann_scheduled": "مجدول",
   "ann_cancelled": "ملغي",

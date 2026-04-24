@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../db/pool';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { sensitiveActionLimiter } from '../middleware/ratelimit';
 import { logAudit } from '../services/audit';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { sendAnnouncementToAll } from '../services/fcm';
@@ -11,13 +12,14 @@ const router = Router();
 
 // --- Schemas ---
 
+// Body .max(4000) caps FCM payload size and prevents DoS; title matches DB VARCHAR(200).
 const createAnnouncementSchema = z.object({
   title_ar: z.string().min(1).max(200),
   title_ru: z.string().max(200).optional(),
   title_en: z.string().max(200).optional(),
-  body_ar: z.string().min(1),
-  body_ru: z.string().optional(),
-  body_en: z.string().optional(),
+  body_ar: z.string().min(1).max(4000),
+  body_ru: z.string().max(4000).optional(),
+  body_en: z.string().max(4000).optional(),
   priority: z.enum(['normal', 'high', 'critical']).default('normal'),
   category: z.enum(['service', 'announcement']).default('announcement'),
   scheduled_for: z.string().datetime({ offset: true }).optional().nullable(),
@@ -29,9 +31,9 @@ const updateAnnouncementSchema = z.object({
   title_ar: z.string().min(1).max(200).optional(),
   title_ru: z.string().max(200).nullable().optional(),
   title_en: z.string().max(200).nullable().optional(),
-  body_ar: z.string().min(1).optional(),
-  body_ru: z.string().nullable().optional(),
-  body_en: z.string().nullable().optional(),
+  body_ar: z.string().min(1).max(4000).optional(),
+  body_ru: z.string().max(4000).nullable().optional(),
+  body_en: z.string().max(4000).nullable().optional(),
   priority: z.enum(['normal', 'high', 'critical']).optional(),
   category: z.enum(['service', 'announcement']).optional(),
   scheduled_for: z.string().datetime({ offset: true }).nullable().optional(),
@@ -123,19 +125,23 @@ router.get('/admin/:id', requireAuth, async (req, res) => {
 
 // --- Admin: create announcement ---
 
-router.post('/admin', requireAuth, validate(createAnnouncementSchema), async (req, res) => {
+router.post('/admin', requireAuth, sensitiveActionLimiter, validate(createAnnouncementSchema), async (req, res) => {
   try {
     const data = req.body as z.infer<typeof createAnnouncementSchema>;
     const adminId = req.admin!.adminId;
 
-    // Determine status based on input
-    let status: string;
+    // Determine INSERT status. For immediate-send we insert as 'sending' so a
+    // silent FCM failure can never leave a row stuck at 'sent' with no push delivered.
+    // markSent() inside sendAnnouncementToAll flips sending -> sent on success.
+    let insertStatus: string;
+    let isImmediateSend = false;
     if (data.status === 'draft') {
-      status = 'draft';
+      insertStatus = 'draft';
     } else if (data.scheduled_for) {
-      status = 'scheduled';
+      insertStatus = 'scheduled';
     } else {
-      status = 'sent'; // will be set to 'sent' after FCM dispatch
+      insertStatus = 'sending';
+      isImmediateSend = true;
     }
 
     const [result] = await pool.execute(
@@ -151,7 +157,7 @@ router.post('/admin', requireAuth, validate(createAnnouncementSchema), async (re
         data.body_en ?? null,
         data.priority,
         data.category,
-        status,
+        insertStatus,
         data.scheduled_for ?? null,
         data.template_id ?? null,
         adminId,
@@ -161,23 +167,28 @@ router.post('/admin', requireAuth, validate(createAnnouncementSchema), async (re
 
     await logAudit({
       adminId,
-      action: status === 'draft' ? 'create_draft' : status === 'scheduled' ? 'schedule_announcement' : 'send_announcement',
+      action: insertStatus === 'draft' ? 'create_draft' : insertStatus === 'scheduled' ? 'schedule_announcement' : 'send_announcement',
       targetType: 'announcement',
       targetId: insertId,
       ip: req.ip,
     });
 
-    // If immediate send (not draft, not scheduled), trigger FCM
-    if (status === 'sent') {
+    let finalStatus: string = insertStatus;
+    if (isImmediateSend) {
       try {
         await sendAnnouncementToAll(insertId);
+        finalStatus = 'sent';
       } catch (fcmErr) {
         console.error('[announcements/send] FCM send failed:', fcmErr);
-        // Announcement is created but FCM failed — don't fail the whole request
+        await pool.execute(
+          `UPDATE announcements SET status = 'send_failed' WHERE id = ? AND status = 'sending'`,
+          [insertId]
+        );
+        finalStatus = 'send_failed';
       }
     }
 
-    res.status(201).json({ id: insertId, status });
+    res.status(201).json({ id: insertId, status: finalStatus });
   } catch (err) {
     console.error('[announcements/admin/create]', err);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });

@@ -25,21 +25,45 @@ router.post('/send-due', requireCronSecret, async (_req, res) => {
 
     let totalSent = 0;
     let totalFailed = 0;
+    let claimed = 0;
+    let skipped = 0;
 
     for (const row of due) {
+      // Atomic claim: only one cron run can transition scheduled -> sending.
+      // If an overlapping run already claimed this row, affectedRows = 0 and we skip.
+      const [claimResult] = await pool.execute(
+        `UPDATE announcements SET status = 'sending'
+         WHERE id = ? AND status = 'scheduled'`,
+        [row.id]
+      );
+      if ((claimResult as ResultSetHeader).affectedRows === 0) {
+        skipped++;
+        console.log(`[cron] Skipping announcement ${row.id} — already claimed by another run`);
+        continue;
+      }
+      claimed++;
+
       try {
         const result = await sendAnnouncementToAll(row.id);
+        // sendAnnouncementToAll calls markSent() on success, which flips sending -> sent.
         totalSent += result.sent;
         totalFailed += result.failed;
         console.log(`[cron] Sent announcement ${row.id}: ${result.sent} sent, ${result.failed} failed`);
       } catch (err) {
         console.error(`[cron] Failed to send announcement ${row.id}:`, err);
+        // Don't leave the row stuck in 'sending' — mark failed so an operator can retry.
+        await pool.execute(
+          `UPDATE announcements SET status = 'send_failed' WHERE id = ? AND status = 'sending'`,
+          [row.id]
+        );
       }
     }
 
     res.json({
       message: `Processed ${due.length} announcement(s)`,
       announcements: due.length,
+      claimed,
+      skipped,
       totalSent,
       totalFailed,
     });

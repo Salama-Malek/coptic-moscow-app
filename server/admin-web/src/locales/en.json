@@ -50,6 +50,8 @@
   "ann_confirm_send": "Confirm Send",
   "ann_confirm_message": "This announcement will be sent to {{count}} devices",
   "ann_sent": "Sent",
+  "ann_sending": "Sending…",
+  "ann_send_failed": "Failed to send",
   "ann_draft": "Draft",
   "ann_scheduled": "Scheduled",
   "ann_cancelled": "Cancelled",

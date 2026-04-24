@@ -50,6 +50,8 @@
   "ann_confirm_send": "Подтвердить отправку",
   "ann_confirm_message": "Это объявление будет отправлено на {{count}} устройств",
   "ann_sent": "Отправлено",
+  "ann_sending": "Отправляется…",
+  "ann_send_failed": "Ошибка отправки",
   "ann_draft": "Черновик",
   "ann_scheduled": "Запланировано",
   "ann_cancelled": "Отменено",
