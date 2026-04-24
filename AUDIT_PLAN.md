@@ -12,9 +12,10 @@ Living checklist of every finding from the pre-launch audit. Each item is update
 | Phase | P0 | P1 | P2 | Done |
 |---|---|---|---|---|
 | Critical bugs | 3 | — | — | **3 / 3** (C1, C2 coded; C3 runbook-only) |
-| High priority | — | 3 | — | **1 / 3** (H2 rate-limit shipped; role-check + H1 + H3 pending) |
+| High priority | — | 3 | — | **2 / 3** (H1 + H2 rate-limit shipped; H3 mobile foreground debounce pending) |
 | Quick wins | — | — | 3 | **3 / 3** |
 | Observability | — | 4 | 3 | **6 / 10** (OB2, OB4, OB5, OB6, OB7, OB8 shipped; OB1/OB3/OB9/OB10 pending) |
+| Growth | — | — | — | **G2, G3, G8, voice-notes shipped · G4 blocked on content · G1/G5/G6/G7/G9–G15 tracked** |
 | Other | — | — | 5 | 0 / 5 |
 
 ---
@@ -49,7 +50,7 @@ Living checklist of every finding from the pre-launch audit. Each item is update
 
 ## P1 — High priority
 
-### [ ] H1 — JWT has no revocation path
+### [x] H1 — JWT has no revocation path  ✅ shipped
 - **File:** `server/src/lib/jwt.ts`, `server/src/middleware/authJwt.ts` (or wherever `requireAuth` lives)
 - **Observation:** Disabled admins retain valid tokens up to 7 days. `active` flag only checked at login.
 - **Fix:** In `requireAuth` middleware, after JWT verify, query `SELECT active FROM admins WHERE id=?` and reject if `0`. One indexed lookup per admin request; admin traffic <1 QPS.
@@ -198,10 +199,11 @@ These turn the app from "open when a push lands" into "open every morning." This
 - **Why it fits:** Russia has a huge "cannot attend physical liturgy" population (elderly, distant city, travel). Diaspora already attends virtually. Currently they hunt for the YouTube link in a WhatsApp group every week.
 - **Why S:** Deep-link URL extension on the announcements schema; notifee already supports action buttons. A channel-ID setting in System/Settings. ~2 days.
 
-#### [ ] G4 — Saint of the day (Synaxarium) `value: 4 · effort: M · fit: 5 · strategic: 4`
+#### [!] G4 — Saint of the day (Synaxarium) `value: 4 · effort: M · fit: 5 · strategic: 4`  ⏸ **BLOCKED on content decision**
 - **What:** Home-screen tile: today's Coptic saint(s), icon, 2-paragraph hagiography in AR/RU/EN. Tap → full reading.
 - **Why it fits:** Copts commemorate saints daily; the Synaxarium is read aloud at dawn. An app tile is the modern equivalent.
 - **Why M:** Synaxarium text exists in Arabic (public domain) and English (CC-licensed); Russian translation is partial and will need compilation work.
+- **Why blocked not shipped:** the infrastructure (Coptic date converter, lookup table schema, tile component) is ~1 day of work — cheap. But shipping it without real Synaxarium content is worse than not shipping: it builds UX debt (placeholder text, "no saint today" on 340/365 days) and conditions users to expect a feature that's actually empty. **Decision you need to make before I build:** (a) which translation source — St Macarius Monastery (AR + partial EN), Fr Tadros Malaty's works, Archangel Michael Coptic Orthodox publications? (b) do we ship AR-only v1 and add RU/EN later? (c) admin-panel CMS for Abouna to add entries himself over time, vs shipped-as-static-data? Flag me with answers and I'll build it.
 
 ### Tier 2 — weekly/occasional features
 
@@ -223,7 +225,7 @@ Drive retention, strengthen community ties. Build after Tier 1 lands.
 - **Why it fits:** Confession is sacrament, not a casual ping. Structured booking removes phone-call friction — especially for young/shy parishioners.
 - **Why M:** Booking state machine, calendar clash detection, privacy (only the parishioner and Abouna see the booking, not "all admins"). Needs thought on cancellation policy.
 
-#### [ ] G8 — Commemorations (40-day + 1-year memorials) `value: 3 · effort: S · fit: 5 · strategic: 3`
+#### [x] G8 — Commemorations (40-day + 1-year memorials) `value: 3 · effort: S · fit: 5 · strategic: 3`  ✅ shipped
 - **What:** Abouna logs a reposed member; app auto-schedules reminder pushes at 40 days and 1 year for family + parish.
 - **Why it fits:** Deeply Coptic custom; currently on Abouna's paper calendar. Small feature, outsize pastoral value.
 - **Why S:** `commemorations` table, reuse the existing scheduled-announcement infrastructure. Could literally be a specialized template.
@@ -414,3 +416,9 @@ LIMIT 5;
   - i18n: 12 new keys (voice_* recorder strings) across AR/RU/EN admin-web. Parity 138/138/138. Mobile player has no locale strings (duration-only UI).
   - **Prod deploy note:** set `UPLOADS_DIR=/home/<hostinger-user>/uploads` + `PUBLIC_BASE_URL=https://coptic-notify.sm4tech.com` in Hostinger env; create the uploads directory once (`mkdir -p ~/uploads/announcements`).
   - `tsc --noEmit` clean on all three. Vite build clean. Bundle +2.76 KB gzipped.
+- **2026-04-24** — **H1 + G8 + fasting tests shipped** (session wrap-up batch):
+  - **H1 JWT revocation** — `requireAuth` middleware now queries `SELECT active FROM admins WHERE id=?` on every authed request. Disabled admins are rejected immediately regardless of token expiry. Fail-closed on DB error (returns 503 rather than letting a potentially-disabled admin through). Closes the biggest remaining P1 security gap; admin traffic <1 QPS so perf cost is negligible.
+  - **G8 Commemorations** — Migration 006 adds `commemorations` table (name AR/RU/EN, date_of_repose, notes, linked announcement IDs). New route `POST /api/admin/commemorations` inserts the row + auto-creates two scheduled announcements (40-day and 1-year, 09:00 Moscow) using pre-filled AR/RU/EN memorial text. If the 40d date is already past, it's saved as draft instead of scheduled. Delete cascades to cancel pending announcements. New admin-web page at `/admin/commemorations` (super-admin only). 13 new locale keys across AR/RU/EN. Parity 151/151/151.
+  - **Fasting unit tests** — 26 golden-day tests at `mobile/src/lib/fasting.test.ts`: Pascha calc for 2024/2025/2026, each fast period boundary (Jonah, Great Lent, Holy Week, Pentecost, Apostles, Dormition, Nativity), each feast override (Nativity, Theophany, Transfiguration, Dormition, Nayrouz, Cross), weekly Wed/Fri, and ordinary-day fallbacks. All 26 pass. Run with `cd mobile && npm run test:fasting`. Uses Node's built-in `node:test` + `tsx`, no jest needed.
+  - **G4 Saint of the day FLAGGED as blocked** — infrastructure is cheap but content is the hard part; shipping without real Synaxarium text would be UX debt. Needs user decision on translation source + scope (AR-only v1? CMS for Abouna?).
+  - `tsc --noEmit` clean across all three packages. Vite build clean; bundle +2 KB gzipped. Fasting test suite passes 26/26.
