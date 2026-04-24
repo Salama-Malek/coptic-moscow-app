@@ -14,6 +14,7 @@ import { scheduleServiceReminders } from '../lib/notifications';
 import CalendarEventCard from '../components/CalendarEventCard';
 import AnnouncementCard from '../components/AnnouncementCard';
 import CopticCross from '../components/CopticCross';
+import FastingTile from '../components/FastingTile';
 
 export default function HomeScreen() {
   const { t, i18n } = useTranslation();
@@ -124,6 +125,11 @@ export default function HomeScreen() {
       </View>
 
       <View style={{ paddingHorizontal: theme.spacing.lg }}>
+        {/* Fasting status tile — taps through to full calendar */}
+        <View style={{ marginBottom: theme.spacing.lg }}>
+          <FastingTile />
+        </View>
+
         {/* Today's services */}
         <SectionHeader
           icon={Sunrise}

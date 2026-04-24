@@ -39,6 +39,9 @@ export interface AnnouncementData {
   body_en: string | null;
   priority: 'normal' | 'high' | 'critical';
   category: 'service' | 'announcement';
+  stream_url?: string | null;
+  voice_url?: string | null;
+  voice_duration_ms?: number | null;
   sent_at: string | null;
   created_at: string;
 }

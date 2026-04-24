@@ -22,22 +22,29 @@ import {
   getDevicePushToken,
   scheduleServiceReminders,
   handleIncomingFcm,
+  registerNotifeeForegroundHandler,
 } from './src/lib/notifications';
 import { registerDevice, heartbeat, fetchCalendar, fetchAnnouncements, CalendarEventData } from './src/lib/api';
 import { expandEvents } from './src/lib/rrule';
-import TabNavigator from './src/navigation/TabNavigator';
+import RootNavigator from './src/navigation/RootNavigator';
 import LanguagePickerScreen from './src/screens/LanguagePickerScreen';
 import { ThemeProvider } from './src/theme/ThemeProvider';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 // Deep-link routing for Android app shortcuts (copticmoscow://inbox, etc.)
 const linking: LinkingOptions<ReactNavigation.RootParamList> = {
   prefixes: [Linking.createURL('/'), 'copticmoscow://'],
   config: {
     screens: {
-      Home: 'home',
-      Calendar: 'calendar',
-      Inbox: 'inbox',
-      Settings: 'settings',
+      Tabs: {
+        screens: {
+          Home: 'home',
+          Calendar: 'calendar',
+          Inbox: 'inbox',
+          Settings: 'settings',
+        },
+      },
+      Fasting: 'fasting',
     },
   },
 };
@@ -94,6 +101,13 @@ export default function App() {
       await handleIncomingFcm(remoteMessage);
     });
     return unsubscribe;
+  }, []);
+
+  // Notifee foreground event listener — lets us react to "Watch" action taps
+  // and body-tap on stream-URL notifications while the app is open. The
+  // background variant is registered at module scope inside notifications.ts.
+  useEffect(() => {
+    return registerNotifeeForegroundHandler();
   }, []);
 
   const initialize = async () => {
@@ -191,21 +205,25 @@ export default function App() {
 
   if (showLanguagePicker) {
     return (
-      <ThemeProvider>
-        <SafeAreaProvider onLayout={onLayoutRootView}>
-          <LanguagePickerScreen onDone={handleFirstLaunchDone} />
-        </SafeAreaProvider>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <SafeAreaProvider onLayout={onLayoutRootView}>
+            <LanguagePickerScreen onDone={handleFirstLaunchDone} />
+          </SafeAreaProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider onLayout={onLayoutRootView}>
-        <NavigationContainer linking={linking}>
-          <TabNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <SafeAreaProvider onLayout={onLayoutRootView}>
+          <NavigationContainer linking={linking}>
+            <RootNavigator />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

@@ -13,13 +13,16 @@ import notifee, {
   AndroidStyle,
   AndroidVisibility,
   AuthorizationStatus,
+  EventType,
   type Notification,
+  type Event,
 } from '@notifee/react-native';
 import messaging, {
   type FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
+import i18n from './i18n';
 import type { ExpandedOccurrence } from './rrule';
 
 const CHANNEL_DEFAULT = 'default';
@@ -99,11 +102,18 @@ type AnnouncementPayload = {
   title: string;
   body: string;
   priority?: 'normal' | 'high' | 'critical';
+  /** When set, notification gets a "Watch" action and body-tap opens this URL. */
+  streamUrl?: string;
+  /** When set, body is prefixed with 🎤 and voice_url is stored in notif data. */
+  voiceUrl?: string;
 };
 
 export async function displayAnnouncement(p: AnnouncementPayload): Promise<void> {
   const priority = p.priority || 'normal';
   const channelId = priority === 'critical' ? CHANNEL_CRITICAL : CHANNEL_DEFAULT;
+  const hasStream = typeof p.streamUrl === 'string' && p.streamUrl.length > 0;
+  const hasVoice = typeof p.voiceUrl === 'string' && p.voiceUrl.length > 0;
+  const displayBody = hasVoice ? `🎤 ${p.body}` : p.body;
 
   // Notifee's TypeScript types omit `bubble` and `shortcutId` even though the
   // underlying native runtime accepts them. We cast for those two fields only
@@ -134,7 +144,7 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
       person: PARISH_PERSON,
       messages: [
         {
-          text: p.body,
+          text: displayBody,
           timestamp: Date.now(),
         },
       ],
@@ -147,21 +157,72 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
       suppressNotification: false,
       desiredHeight: 600,
     },
+    // Watch action — only shown when the announcement has a stream URL.
+    // The id='watch' is picked up by onForeground/onBackgroundEvent below.
+    ...(hasStream && {
+      actions: [
+        {
+          title: i18n.t('notif_watch_action', { defaultValue: 'Watch' }),
+          pressAction: { id: 'watch', launchActivity: 'default' },
+        },
+      ],
+    }),
   };
+
+  // notifee serializes `data` to strings; keep everything string-typed.
+  const data: Record<string, string> = {
+    type: 'announcement',
+    announcementId: p.id,
+  };
+  if (hasStream) data.stream_url = p.streamUrl!;
+  if (hasVoice) data.voice_url = p.voiceUrl!;
 
   const notification: Notification = {
     id: p.id,
     title: p.title,
-    body: p.body,
-    data: {
-      type: 'announcement',
-      announcementId: p.id,
-    },
+    body: displayBody,
+    data,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     android: androidConfig as any,
   };
 
   await notifee.displayNotification(notification);
+}
+
+// =========================================================================
+// Notifee event handler — opens the stream URL when the user taps
+// "Watch" (or the notification body if a stream URL is attached).
+//
+// Registered once at module scope (like the FCM background handler) so it
+// works when the app is killed. Keep the function stable across reloads.
+// =========================================================================
+
+async function onNotificationEvent({ type, detail }: Event): Promise<void> {
+  if (type !== EventType.ACTION_PRESS && type !== EventType.PRESS) return;
+  const data = detail.notification?.data as Record<string, string> | undefined;
+  const streamUrl = data?.stream_url;
+  if (!streamUrl) return;
+
+  // For the body-press path, only open the URL if the announcement actually has
+  // one — otherwise fall through to the default launchActivity (app opens).
+  if (type === EventType.ACTION_PRESS && detail.pressAction?.id !== 'watch') return;
+
+  try {
+    const supported = await Linking.canOpenURL(streamUrl);
+    if (supported) {
+      await Linking.openURL(streamUrl);
+    } else {
+      console.warn('[notifications] cannot open stream URL:', streamUrl);
+    }
+  } catch (err) {
+    console.warn('[notifications] openURL failed:', err);
+  }
+}
+
+notifee.onBackgroundEvent(onNotificationEvent);
+
+export function registerNotifeeForegroundHandler(): () => void {
+  return notifee.onForegroundEvent(onNotificationEvent);
 }
 
 // =========================================================================
@@ -178,11 +239,15 @@ export async function handleIncomingFcm(
   if (data.type !== 'announcement') return;
 
   const priority = (data.priority || 'normal') as 'normal' | 'high' | 'critical';
+  const streamUrl = typeof data.stream_url === 'string' ? data.stream_url : undefined;
+  const voiceUrl = typeof data.voice_url === 'string' ? data.voice_url : undefined;
   await displayAnnouncement({
     id: String(data.id || data.announcementId || Date.now()),
     title: String(data.title || ''),
     body: String(data.body || ''),
     priority,
+    streamUrl,
+    voiceUrl,
   });
 }
 

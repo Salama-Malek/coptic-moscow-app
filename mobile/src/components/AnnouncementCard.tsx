@@ -5,6 +5,7 @@ import { AlertTriangle, BellRing, Calendar } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { getFontFamily, type Language } from '../theme/fonts';
 import { Card } from './ui/Card';
+import VoicePlayer from './VoicePlayer';
 import { formatMoscowDate } from '../lib/datetime';
 import type { AnnouncementData } from '../lib/api';
 
@@ -103,6 +104,15 @@ export default function AnnouncementCard({ announcement, compact = false }: Prop
       >
         {body}
       </Text>
+
+      {announcement.voice_url ? (
+        <View style={{ marginTop: 8 }}>
+          <VoicePlayer
+            url={announcement.voice_url}
+            durationMs={announcement.voice_duration_ms ?? null}
+          />
+        </View>
+      ) : null}
 
       {date ? (
         <View style={styles.dateRow}>
