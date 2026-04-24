@@ -44,9 +44,7 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "1.9.25",
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "kotlinVersion": "1.9.25"
           }
         }
       ]
