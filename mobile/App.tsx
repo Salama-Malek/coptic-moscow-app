@@ -45,12 +45,13 @@ const linking: LinkingOptions<ReactNavigation.RootParamList> = {
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
-// Background FCM handler — must be registered at module scope so it fires even
-// when the app is killed. Notifee builds the bubble notification from the data
-// payload; the system never auto-displays (we send data-only messages from the
-// backend so we have full control over the notification).
-messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  await handleIncomingFcm(remoteMessage);
+// Background FCM handler — must be registered at module scope. With a hybrid
+// payload (notification + data), Android auto-displays the notification from
+// the `notification` key reliably even in killed state. We deliberately do
+// nothing here to avoid double-posting. Bubble-capable MessagingStyle is
+// applied by `onMessage` when the app is foreground.
+messaging().setBackgroundMessageHandler(async (_remoteMessage) => {
+  /* no-op — system handles display in background/killed state */
 });
 
 export default function App() {

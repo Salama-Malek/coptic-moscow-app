@@ -101,6 +101,49 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
   const priority = p.priority || 'normal';
   const channelId = priority === 'critical' ? CHANNEL_CRITICAL : CHANNEL_DEFAULT;
 
+  // Notifee's TypeScript types omit `bubble` and `shortcutId` even though the
+  // underlying native runtime accepts them. We cast to `any` for those two
+  // fields only so Android gets the metadata it needs to auto-bubble.
+  const androidConfig = {
+    channelId,
+    smallIcon: 'ic_launcher',
+    importance:
+      priority === 'critical'
+        ? AndroidImportance.HIGH
+        : AndroidImportance.DEFAULT,
+    visibility: AndroidVisibility.PUBLIC,
+    pressAction: {
+      id: 'default',
+      launchActivity: 'default',
+    },
+    // Link to our static shortcut (see mobile/plugins/with-app-shortcuts.js).
+    // Android needs a ShortcutInfo to render a bubble — reusing the `inbox`
+    // shortcut since the bubble expands to the Inbox tab via deep link.
+    shortcutId: 'inbox',
+    // MessagingStyle + Person = eligible for Conversation section + Bubbles
+    style: {
+      type: AndroidStyle.MESSAGING,
+      person: PARISH_PERSON,
+      messages: [
+        {
+          text: p.body,
+          timestamp: Date.now(),
+        },
+      ],
+    },
+    // BubbleMetadata — Android 11+ shows as a floating bubble when the user
+    // has bubbles enabled for this app (Settings → Apps → Coptic → Bubbles).
+    // autoExpand=false: bubble appears collapsed, user taps to expand.
+    // suppressNotification=false: the normal shade notification still shows
+    // alongside the bubble so users who have bubbles off still see it.
+    bubble: {
+      icon: 'drawable://ic_launcher',
+      autoExpand: false,
+      suppressNotification: false,
+      desiredHeight: 600,
+    },
+  };
+
   const notification: Notification = {
     id: p.id,
     title: p.title,
@@ -109,32 +152,8 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
       type: 'announcement',
       announcementId: p.id,
     },
-    android: {
-      channelId,
-      smallIcon: 'ic_launcher',
-      importance:
-        priority === 'critical'
-          ? AndroidImportance.HIGH
-          : AndroidImportance.DEFAULT,
-      visibility: AndroidVisibility.PUBLIC,
-      pressAction: {
-        id: 'default',
-        launchActivity: 'default',
-      },
-      // MessagingStyle with a Person → eligible for Conversation section on
-      // Android 12+. Users can long-press and pick "Show in floating bubble"
-      // to pop out subsequent messages from this conversation as a bubble.
-      style: {
-        type: AndroidStyle.MESSAGING,
-        person: PARISH_PERSON,
-        messages: [
-          {
-            text: p.body,
-            timestamp: Date.now(),
-          },
-        ],
-      },
-    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    android: androidConfig as any,
   };
 
   await notifee.displayNotification(notification);
