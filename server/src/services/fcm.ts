@@ -6,6 +6,10 @@ import { pool } from '../db/pool';
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 let firebaseInitialized = false;
 
+export function isFirebaseInitialized(): boolean {
+  return firebaseInitialized;
+}
+
 export function initFirebase(): void {
   if (firebaseInitialized) return;
   if (!serviceAccountPath) {
