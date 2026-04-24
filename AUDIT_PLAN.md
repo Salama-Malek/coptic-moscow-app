@@ -174,6 +174,133 @@ Already have device_tokens + last_seen. Add admin-panel view: registered vs acti
 
 ---
 
+## Super-app growth opportunities
+
+Scored on: **Value 1-5** (how much it drives daily use + trust + retention) · **Effort S/M/L/XL** · **Fit 1-5** (how Coptic-Moscow-audience-specific it is — diaspora, multilingual, clergy-led) · **Strategic 1-5** (toward multi-parish SaaS).
+
+### Tier 1 — habit-forming daily features
+
+These turn the app from "open when a push lands" into "open every morning." This is the category-leading wedge.
+
+#### [ ] G1 — Agpeya (Coptic Book of Hours) `value: 5 · effort: L · fit: 5 · strategic: 5`
+- **What:** The seven canonical hours (Prime/Terce/Sext/None/Vespers/Compline/Midnight) with full psalm + prayer text in AR/RU/EN. Audio recitation in Arabic with follow-along highlighting. Suggested-hour push at sunrise/noon/sunset.
+- **Why it fits:** The single most-used prayer book in Coptic laity. Currently parishioners flip PDF copies or use English-only Android apps. Shipping this in Russian is a genuine first in the diaspora.
+- **Key decisions:** Text sourcing (St Macarius Monastery publishes CC-licensed translations; Russian translations by Fr Sergei Timashev exist). Audio: licensed or crowd-recorded by Abouna.
+- **Why L not M:** the content pipeline (copyright clearance, AR/RU/EN alignment, audio sync if pursued) is most of the work. The UI is straightforward.
+
+#### [ ] G2 — Fasting calendar with daily meal guidance `value: 5 · effort: S · fit: 5 · strategic: 5`
+- **What:** Every day marked with its fasting type (Strict / Wine+Oil / Fish Allowed / Non-fast). Tap a day → what's permitted + common Coptic breakfast/lunch/dinner ideas. Ramadan-style daily tile on Home.
+- **Why it fits:** Coptic church fasts >210 days/year. Diaspora parishioners constantly Google "is today a fast?" No single reliable source in Russian.
+- **Why S:** Content is static, rule-based (movable + fixed feasts). Data ships bundled in the app; zero server dependency. Calculation engine is public-domain.
+
+#### [ ] G3 — Live-stream liturgy + "Tap to watch" push `value: 5 · effort: S · fit: 5 · strategic: 3`
+- **What:** Sunday Liturgy live-stream URL embedded in the scheduled-announcement push. Tap notification → opens YouTube / VK Live in the video player. Bonus: in-app PiP player that follows you across screens.
+- **Why it fits:** Russia has a huge "cannot attend physical liturgy" population (elderly, distant city, travel). Diaspora already attends virtually. Currently they hunt for the YouTube link in a WhatsApp group every week.
+- **Why S:** Deep-link URL extension on the announcements schema; notifee already supports action buttons. A channel-ID setting in System/Settings. ~2 days.
+
+#### [ ] G4 — Saint of the day (Synaxarium) `value: 4 · effort: M · fit: 5 · strategic: 4`
+- **What:** Home-screen tile: today's Coptic saint(s), icon, 2-paragraph hagiography in AR/RU/EN. Tap → full reading.
+- **Why it fits:** Copts commemorate saints daily; the Synaxarium is read aloud at dawn. An app tile is the modern equivalent.
+- **Why M:** Synaxarium text exists in Arabic (public domain) and English (CC-licensed); Russian translation is partial and will need compilation work.
+
+### Tier 2 — weekly/occasional features
+
+Drive retention, strengthen community ties. Build after Tier 1 lands.
+
+#### [ ] G5 — Audio homilies (Abouna's sermons) `value: 4 · effort: M · fit: 5 · strategic: 4`
+- **What:** Abouna uploads recorded sermon → auto-transcoded to mp3 → appears in Inbox. Background playback, resume-where-you-left-off, 1.25× / 1.5× speed.
+- **Why it fits:** Diaspora cannot attend Arabic sermons; recordings are gold. Currently Abouna messages mp3 files in Telegram; they vanish in the scrollback.
+- **Why M:** Storage (Backblaze B2 / Cloudflare R2 free tier fits easily), audio player UI, admin upload form. Transcoding via ffmpeg-on-demand or at upload time.
+- **Open question:** Offline download vs stream-only. Offline is a bigger engineering lift but critical for Moscow metro / diaspora on patchy wifi.
+
+#### [ ] G6 — Group messaging (youth / mothers / choir / ushers) `value: 4 · effort: M · fit: 5 · strategic: 5`
+- **What:** Abouna picks which group(s) receive an announcement. Users opt into groups in Settings. Groups stored as JSON array on device_tokens — extends existing `preferences` pattern.
+- **Why it fits:** Abouna currently has 4 WhatsApp groups + the app. Group-targeted push reduces notification fatigue and gives each subgroup its own signal-to-noise.
+- **Why M:** Schema extension (`groups` column or JSON), admin-web multi-select, mobile group management in Settings, FCM query changes. Reasonably clean since the data model already supports it.
+
+#### [ ] G7 — Confession booking `value: 4 · effort: M · fit: 5 · strategic: 4`
+- **What:** Abouna defines weekly availability slots → parishioners pick a 15-min slot. Calendar integration, reminder push 30 min before.
+- **Why it fits:** Confession is sacrament, not a casual ping. Structured booking removes phone-call friction — especially for young/shy parishioners.
+- **Why M:** Booking state machine, calendar clash detection, privacy (only the parishioner and Abouna see the booking, not "all admins"). Needs thought on cancellation policy.
+
+#### [ ] G8 — Commemorations (40-day + 1-year memorials) `value: 3 · effort: S · fit: 5 · strategic: 3`
+- **What:** Abouna logs a reposed member; app auto-schedules reminder pushes at 40 days and 1 year for family + parish.
+- **Why it fits:** Deeply Coptic custom; currently on Abouna's paper calendar. Small feature, outsize pastoral value.
+- **Why S:** `commemorations` table, reuse the existing scheduled-announcement infrastructure. Could literally be a specialized template.
+
+#### [ ] G9 — Event RSVPs with capacity `value: 3 · effort: M · fit: 4 · strategic: 3`
+- **What:** Parish dinners, youth retreats, vespers dinners. Attach RSVP + capacity limit to a calendar_event.
+- **Why it fits:** Moscow parish has recurring dinners; currently capacity is tracked in a Google Sheet.
+- **Why M:** Extends calendar_events, adds rsvps table, admin panel for guest list. Medium-complexity UI.
+
+### Tier 3 — operator features (for Abouna's workflow)
+
+These don't drive parishioner retention but save Abouna hours per week. Makes the product stickier from the clergy side.
+
+#### [ ] G10 — Baptism / wedding / funeral records archive `value: 3 · effort: M · fit: 4 · strategic: 4`
+- **What:** Digital parish register — searchable record book of baptisms, weddings, chrismations, funerals. Matches the legal paper-book Orthodox priests must maintain.
+- **Why it fits:** Every Orthodox parish already does this on paper. Digital copy is legal in Russia if print-on-demand; strongly desired by young clergy.
+- **Why M:** Records schema, generate PDF with parish seal, search/filter, audit log for every view. Privacy-heavy.
+
+#### [ ] G11 — Parish directory (opt-in) `value: 3 · effort: M · fit: 4 · strategic: 4`
+- **What:** Members opt to appear with name/photo/family-status. Contact via in-app message only (no phone scrape). Abouna moderates.
+- **Why it fits:** Diaspora community cohesion. Harder in Russia (152-FZ personal-data law implications — needs consent flow).
+- **Why M:** Profile schema, moderation queue, privacy controls, 152-FZ compliance check.
+
+#### [ ] G12 — Donation flow `value: 4 · effort: L · fit: 5 · strategic: 5`
+- **What:** One-tap tithing. Russia-internal: YooKassa or CloudPayments (Stripe is restricted). Diaspora: Stripe. Recurring subscriptions, admin CSV export for parish accounting.
+- **Why it fits:** Diaspora giving is significant; current channel is "Telegram me for our SberBank IBAN." Friction = lost revenue.
+- **Why L:** Payment compliance (PCI-adjacent even if tokenized), receipt flow, multi-currency, tax handling. Non-trivial legal review before live.
+
+### Tier 4 — platform plays (future)
+
+These unlock multi-parish SaaS or iOS parity. Don't pursue until at least 1 other parish asks.
+
+#### [ ] G13 — Multi-parish tenant mode `strategic: 5`
+Add `parish_id` scoping to every table, an invite flow, subdomain routing. The architecture is already 80% there (single-Firebase-project pattern, role-based admin). Would make this a Russian-Coptic-diaspora SaaS with zero new core UX.
+
+#### [ ] G14 — iOS parity `strategic: 4`
+EAS can already produce iOS builds. Blockers: $99/yr developer account, APNs certificate management, Apple review cycle. Notifee bubble feature is Android-only — iOS gets MessagingStyle via APNs. Deferred until Android user base demands it.
+
+#### [ ] G15 — Open Coptic Church Calendar API `strategic: 5`
+Expose G2 (fasting calendar) + G4 (saint of the day) as a public JSON API. Other Coptic apps/sites consume it, cementing this project as the calendar source-of-truth. Network-effect play.
+
+### Nice-to-have (track but don't pursue unless asked)
+
+- **G16 — Iconography library with explanations** (value 2, effort M) — educational, not habit-forming. Better as a web blog than an app feature.
+- **G17 — Notifications digest** (value 2, effort S) — weekly summary push for users who want less noise. Low pull, but cheap and may reduce uninstalls.
+- **G18 — Offline prayer library** (value 4, effort S) — overlaps heavily with G1 Agpeya and can ship as a subset.
+- **G19 — Multilingual bulletin board** (value 3, effort S) — largely duplicates announcements feature. Skip.
+
+### Recommended build order
+
+If I were shipping this commercially, the order would be:
+
+1. **G2 Fasting calendar** (1-2 weeks, instant daily utility) — fastest path to daily opens
+2. **G3 Live-stream + tap-to-watch push** (days, high-perceived-value, uses existing infra)
+3. **G1 Agpeya** (4-6 weeks, the defining feature) — start text sourcing now, ship incrementally per-hour
+4. **G4 Saint of the day** (2 weeks) — ships alongside G1 since both need Synaxarium text pipeline
+5. **G6 Group messaging** (1-2 weeks, low-cost high-engagement)
+6. **G8 Commemorations** (days, high pastoral value)
+7. **G5 Audio homilies** (2-3 weeks, needs storage decision first)
+8. **G7 Confession booking** (1-2 weeks, high-touch — get Abouna's feedback on slot model first)
+9. **G12 Donations** (3-4 weeks + legal review)
+10. **G13 Multi-parish** — only when a second parish asks
+
+**Bundle strategy:** Tier 1 (G1-G4) shipped together is the "1.0" release that justifies App Store visibility. Anything before that is incremental polish on the notification tool.
+
+### Decision points for you
+
+Before I can implement anything, I need you to pick:
+
+1. **Which feature(s) to pursue in what order.** My pick: G2 first (cheapest, fastest user-visible win), then G3 (days of work), then start G1's content pipeline.
+2. **G1 Agpeya content source.** Do you have access to a specific translation you want to use (St Macarius? another)? This decides licensing and months of future work.
+3. **G5 storage** if we do audio. Backblaze B2 ($6/TB/month, S3-compatible, no egress fees) vs Hostinger disk (limited) vs Cloudflare R2 (free egress, slightly more setup).
+4. **G12 payments** — Russia (YooKassa / CloudPayments / Tinkoff) vs diaspora (Stripe) vs both.
+5. **Anything missing from this list** that you specifically want.
+
+---
+
 ## Sanity-check results (recon pass)
 
 Recent work holds up — no regressions found:
