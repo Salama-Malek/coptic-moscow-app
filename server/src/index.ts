@@ -21,6 +21,7 @@ import cronRoutes from './routes/cron';
 import healthRoutes from './routes/health';
 import systemRoutes from './routes/system';
 import voiceUploadsRoutes, { getUploadsDir } from './routes/voice-uploads';
+import commemorationRoutes from './routes/commemorations';
 import { initFirebase } from './services/fcm';
 import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -94,6 +95,7 @@ app.use('/api/admin/snippets', snippetRoutes);
 app.use('/api/admin/templates', templateRoutes);
 app.use('/api/admin/system', systemRoutes);
 app.use('/api/admin/announcements', voiceUploadsRoutes);
+app.use('/api/admin/commemorations', commemorationRoutes);
 app.use('/api/cron', cronRoutes);
 
 // --- Public static: user-uploaded audio ---
