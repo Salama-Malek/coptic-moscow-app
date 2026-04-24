@@ -43,6 +43,8 @@ interface AnnouncementRow {
   priority: 'normal' | 'high' | 'critical';
   category: 'service' | 'announcement';
   stream_url: string | null;
+  voice_url: string | null;
+  voice_duration_ms: number | null;
 }
 
 interface DeviceTokenRow {
@@ -81,7 +83,7 @@ export async function sendAnnouncementToAll(announcementId: number): Promise<Sen
 
   // 1. Fetch the announcement
   const [annRows] = await pool.execute(
-    'SELECT id, title_ar, title_ru, title_en, body_ar, body_ru, body_en, priority, category, stream_url FROM announcements WHERE id = ?',
+    'SELECT id, title_ar, title_ru, title_en, body_ar, body_ru, body_en, priority, category, stream_url, voice_url, voice_duration_ms FROM announcements WHERE id = ?',
     [announcementId]
   );
   const announcements = annRows as AnnouncementRow[];
@@ -138,6 +140,8 @@ export async function sendAnnouncementToAll(announcementId: number): Promise<Sen
       body,
       announcement.priority,
       announcement.stream_url,
+      announcement.voice_url,
+      announcement.voice_duration_ms,
     );
     totalSent += result.sent;
     totalFailed += result.failed;
@@ -186,6 +190,8 @@ async function sendBatch(
   body: string,
   priority: 'normal' | 'high' | 'critical',
   streamUrl: string | null,
+  voiceUrl: string | null,
+  voiceDurationMs: number | null,
 ): Promise<SendResult> {
   let totalSent = 0;
   let totalFailed = 0;
@@ -201,8 +207,8 @@ async function sendBatch(
     // FCM via @notifee. Hybrid payloads (notification + data) caused
     // duplicate displays on some Android versions. High FCM priority
     // guarantees delivery is not deferred by Doze.
-    // FCM data values must be strings; omit stream_url entirely when null so
-    // the mobile handler can rely on `typeof data.stream_url === 'string'`.
+    // FCM data values must be strings; omit optional fields entirely when null
+    // so the mobile handler can rely on `typeof data.<field> === 'string'`.
     const data: Record<string, string> = {
       type: 'announcement',
       id: String(announcementId),
@@ -211,6 +217,10 @@ async function sendBatch(
       priority,
     };
     if (streamUrl) data.stream_url = streamUrl;
+    if (voiceUrl) data.voice_url = voiceUrl;
+    if (voiceDurationMs !== null && voiceDurationMs > 0) {
+      data.voice_duration_ms = String(voiceDurationMs);
+    }
 
     const message: admin.messaging.MulticastMessage = {
       tokens: chunk,

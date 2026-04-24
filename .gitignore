@@ -12,6 +12,10 @@ server/admin-web/dist/
 mobile/.expo/
 mobile/dist/
 
+# User-uploaded media (dev default). In prod, point UPLOADS_DIR outside the repo.
+server/uploads/
+uploads/
+
 # IDE
 .vscode/
 .idea/

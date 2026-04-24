@@ -26,6 +26,10 @@ const createAnnouncementSchema = z.object({
   scheduled_for: z.string().datetime({ offset: true }).optional().nullable(),
   template_id: z.number().int().positive().optional().nullable(),
   stream_url: z.string().url().max(500).optional().nullable(),
+  // Relative path like /uploads/announcements/{uuid}.m4a, or absolute https URL.
+  // Voice upload endpoint returns a relative path; permissive schema accepts either.
+  voice_url: z.string().min(1).max(500).optional().nullable(),
+  voice_duration_ms: z.number().int().min(0).max(5 * 60 * 1000).optional().nullable(),
   status: z.enum(['draft', 'scheduled', 'sent']).optional(),
 });
 
@@ -40,6 +44,8 @@ const updateAnnouncementSchema = z.object({
   category: z.enum(['service', 'announcement']).optional(),
   scheduled_for: z.string().datetime({ offset: true }).nullable().optional(),
   stream_url: z.string().url().max(500).nullable().optional(),
+  voice_url: z.string().min(1).max(500).nullable().optional(),
+  voice_duration_ms: z.number().int().min(0).max(5 * 60 * 1000).nullable().optional(),
 });
 
 const listQuerySchema = z.object({
@@ -54,7 +60,8 @@ router.get('/', validate(listQuerySchema, 'query'), async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT id, title_ar, title_ru, title_en, body_ar, body_ru, body_en,
-              priority, category, stream_url, sent_at, created_at
+              priority, category, stream_url, voice_url, voice_duration_ms,
+              sent_at, created_at
        FROM announcements
        WHERE status = 'sent' AND sent_at IS NOT NULL
        ORDER BY sent_at DESC LIMIT ?`,
@@ -77,7 +84,8 @@ router.get('/admin', requireAuth, async (req, res) => {
     const [rows] = await pool.query(
       `SELECT a.id, a.title_ar, a.title_ru, a.title_en, a.body_ar, a.body_ru, a.body_en,
               a.priority, a.category, a.status, a.scheduled_for, a.sent_at, a.created_at,
-              a.created_by, a.stream_url, adm.display_name as created_by_name,
+              a.created_by, a.stream_url, a.voice_url, a.voice_duration_ms,
+              adm.display_name as created_by_name,
               sl.sent_count, sl.failed_count
        FROM announcements a
        LEFT JOIN admins adm ON adm.id = a.created_by
@@ -106,7 +114,8 @@ router.get('/admin/:id', requireAuth, async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT a.id, a.title_ar, a.title_ru, a.title_en, a.body_ar, a.body_ru, a.body_en,
               a.priority, a.category, a.status, a.scheduled_for, a.sent_at, a.created_at,
-              a.created_by, a.stream_url, adm.display_name as created_by_name,
+              a.created_by, a.stream_url, a.voice_url, a.voice_duration_ms,
+              adm.display_name as created_by_name,
               sl.sent_count, sl.failed_count
        FROM announcements a
        LEFT JOIN admins adm ON adm.id = a.created_by
@@ -149,8 +158,8 @@ router.post('/admin', requireAuth, sensitiveActionLimiter, validate(createAnnoun
 
     const [result] = await pool.execute(
       `INSERT INTO announcements
-        (title_ar, title_ru, title_en, body_ar, body_ru, body_en, priority, category, status, scheduled_for, template_id, stream_url, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (title_ar, title_ru, title_en, body_ar, body_ru, body_en, priority, category, status, scheduled_for, template_id, stream_url, voice_url, voice_duration_ms, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.title_ar,
         data.title_ru ?? null,
@@ -164,6 +173,8 @@ router.post('/admin', requireAuth, sensitiveActionLimiter, validate(createAnnoun
         data.scheduled_for ?? null,
         data.template_id ?? null,
         data.stream_url ?? null,
+        data.voice_url ?? null,
+        data.voice_duration_ms ?? null,
         adminId,
       ]
     );
@@ -229,6 +240,8 @@ router.put('/admin/:id', requireAuth, validate(updateAnnouncementSchema), async 
       category: 'category',
       scheduled_for: 'scheduled_for',
       stream_url: 'stream_url',
+      voice_url: 'voice_url',
+      voice_duration_ms: 'voice_duration_ms',
     };
     for (const col of Object.keys(colMap)) {
       const key = colMap[col];

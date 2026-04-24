@@ -20,6 +20,7 @@ import templateRoutes from './routes/templates';
 import cronRoutes from './routes/cron';
 import healthRoutes from './routes/health';
 import systemRoutes from './routes/system';
+import voiceUploadsRoutes, { getUploadsDir } from './routes/voice-uploads';
 import { initFirebase } from './services/fcm';
 import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -92,7 +93,22 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/snippets', snippetRoutes);
 app.use('/api/admin/templates', templateRoutes);
 app.use('/api/admin/system', systemRoutes);
+app.use('/api/admin/announcements', voiceUploadsRoutes);
 app.use('/api/cron', cronRoutes);
+
+// --- Public static: user-uploaded audio ---
+// UPLOADS_DIR is configurable (set outside the repo root in prod). Files
+// are served without auth because the URL ships in the FCM data payload.
+const uploadsDir = getUploadsDir();
+app.use('/uploads', express.static(uploadsDir, {
+  // Audio files are immutable (UUID filenames) so aggressive caching is safe.
+  maxAge: '30d',
+  immutable: true,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+  },
+}));
+logger.info({ uploadsDir }, '[server] static uploads dir');
 
 // --- Serve admin panel (built Vite output) ---
 const adminWebDist = path.join(__dirname, '..', 'admin-web', 'dist');
