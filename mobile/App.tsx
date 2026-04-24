@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { I18nManager, Platform } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { AppState, AppStateStatus, I18nManager, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -51,9 +51,25 @@ export default function App() {
 
   const [isReady, setIsReady] = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
     initialize();
+  }, []);
+
+  // Re-sync when the app returns to foreground — keeps calendar/announcements fresh
+  // after admin edits or deletes (stale local reminders get re-computed + cancelled).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.current.match(/inactive|background/) && next === 'active') {
+        syncData().catch(() => {
+          /* silent — offline handled by sync itself */
+        });
+      }
+      appState.current = next;
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initialize = async () => {
