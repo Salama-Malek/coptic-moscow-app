@@ -33,14 +33,6 @@
       "googleServicesFile": "./google-services.json"
     },
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "sounds": [
-            "./assets/sounds/bell.mp3"
-          ]
-        }
-      ],
       "@react-native-firebase/app",
       [
         "expo-build-properties",

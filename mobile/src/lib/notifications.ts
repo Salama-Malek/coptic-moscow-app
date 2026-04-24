@@ -31,7 +31,11 @@ const PARISH_PERSON = {
   name: 'الكنيسة القبطية بموسكو',
   id: 'parish',
   important: true,
+  icon: 'drawable://ic_launcher',
 };
+
+// Parish primary red — the status-bar icon accent color.
+const ACCENT_COLOR = '#6B1A1A';
 
 // =========================================================================
 // Channel setup (Android only)
@@ -102,16 +106,19 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
   const channelId = priority === 'critical' ? CHANNEL_CRITICAL : CHANNEL_DEFAULT;
 
   // Notifee's TypeScript types omit `bubble` and `shortcutId` even though the
-  // underlying native runtime accepts them. We cast to `any` for those two
-  // fields only so Android gets the metadata it needs to auto-bubble.
+  // underlying native runtime accepts them. We cast for those two fields only
+  // so Android gets the metadata it needs to auto-bubble on Android 11+.
   const androidConfig = {
     channelId,
-    smallIcon: 'ic_launcher',
+    smallIcon: 'ic_launcher',       // status bar icon
+    largeIcon: 'drawable://ic_launcher', // big circular parish logo in the notif body
+    color: ACCENT_COLOR,             // tints the small icon + accent line
     importance:
       priority === 'critical'
         ? AndroidImportance.HIGH
         : AndroidImportance.DEFAULT,
     visibility: AndroidVisibility.PUBLIC,
+    showTimestamp: true,
     pressAction: {
       id: 'default',
       launchActivity: 'default',
@@ -120,7 +127,8 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
     // Android needs a ShortcutInfo to render a bubble — reusing the `inbox`
     // shortcut since the bubble expands to the Inbox tab via deep link.
     shortcutId: 'inbox',
-    // MessagingStyle + Person = eligible for Conversation section + Bubbles
+    // MessagingStyle + Person = eligible for Conversation section + Bubbles.
+    // Person has `icon` so the parish logo appears as the sender avatar.
     style: {
       type: AndroidStyle.MESSAGING,
       person: PARISH_PERSON,
@@ -131,11 +139,8 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
         },
       ],
     },
-    // BubbleMetadata — Android 11+ shows as a floating bubble when the user
-    // has bubbles enabled for this app (Settings → Apps → Coptic → Bubbles).
-    // autoExpand=false: bubble appears collapsed, user taps to expand.
-    // suppressNotification=false: the normal shade notification still shows
-    // alongside the bubble so users who have bubbles off still see it.
+    // BubbleMetadata — Android 11+ shows as a floating bubble if the user has
+    // bubbles enabled for this app (Settings → Apps → Coptic → Bubbles).
     bubble: {
       icon: 'drawable://ic_launcher',
       autoExpand: false,
