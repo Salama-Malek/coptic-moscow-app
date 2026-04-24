@@ -81,14 +81,37 @@ export default function App() {
     setIsReady(true);
   };
 
-  const syncData = async () => {
+  const ensureDeviceRegistered = async (): Promise<void> => {
     try {
-      // Heartbeat
-      const device = await getItem<{ fcm_token: string }>('deviceState');
-      if (device?.fcm_token) {
-        heartbeat(device.fcm_token);
-      }
+      await setupNotificationChannels();
+      const granted = await requestPermissions();
+      if (!granted) return;
+      const token = await getDevicePushToken();
+      if (!token) return;
+      const lang = await getLanguage();
+      await registerDevice({
+        fcm_token: token,
+        platform: Platform.OS as 'ios' | 'android',
+        app_version: '1.0.0',
+        language: lang,
+        preferences: { services: true, announcements: true },
+      });
+      await setItem('deviceState', { fcm_token: token });
+    } catch {
+      // Silent — will retry on next launch
+    }
+  };
 
+  const syncData = async () => {
+    // Register OR heartbeat — retry registration on every launch until it succeeds
+    const device = await getItem<{ fcm_token: string }>('deviceState');
+    if (device?.fcm_token) {
+      try { await heartbeat(device.fcm_token); } catch { /* offline */ }
+    } else {
+      await ensureDeviceRegistered();
+    }
+
+    try {
       // Calendar sync
       const calendarData = await fetchCalendar();
       if (calendarData.length > 0) {
@@ -112,24 +135,8 @@ export default function App() {
     await setItem('firstLaunchDone', true);
     setShowLanguagePicker(false);
 
-    // Now do first registration
-    await setupNotificationChannels();
-    const granted = await requestPermissions();
-
-    if (granted) {
-      const token = await getDevicePushToken();
-      if (token) {
-        const lang = await getLanguage();
-        await registerDevice({
-          fcm_token: token,
-          platform: Platform.OS as 'ios' | 'android',
-          app_version: '1.0.0',
-          language: lang,
-          preferences: { services: true, announcements: true },
-        });
-        await setItem('deviceState', { fcm_token: token });
-      }
-    }
+    // First registration attempt (will retry on future launches if it fails here)
+    await ensureDeviceRegistered();
 
     await syncData();
   };
