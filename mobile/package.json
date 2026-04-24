@@ -51,6 +51,11 @@
     "typescript": "^5.7.2"
   },
   "expo": {
+    "install": {
+      "exclude": [
+        "expo-av"
+      ]
+    },
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
