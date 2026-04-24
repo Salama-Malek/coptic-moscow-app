@@ -4,6 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Clock } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { getFontFamily, type Language } from '../theme/fonts';
+import {
+  formatMoscowTime,
+  moscowDayOfMonth,
+  moscowMonthShort,
+  moscowWeekdayLong,
+} from '../lib/datetime';
 import type { ExpandedOccurrence } from '../lib/rrule';
 
 interface Props {
@@ -24,24 +30,10 @@ export default function CalendarEventCard({ occurrence }: Props) {
       ? event.title_en || event.title_ar
       : event.title_ar;
 
-  const dayStr = date.getDate();
-  const monthStr = date.toLocaleDateString(
-    lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
-    { month: 'short' },
-  );
-
-  const dateStr = date.toLocaleDateString(
-    lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
-    { weekday: 'long' },
-  );
-
-  const timeStr =
-    event.duration_minutes > 0
-      ? date.toLocaleTimeString(
-          lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
-          { hour: '2-digit', minute: '2-digit' },
-        )
-      : '';
+  const dayStr = moscowDayOfMonth(date) ?? '';
+  const monthStr = moscowMonthShort(date, lang);
+  const dateStr = moscowWeekdayLong(date, lang);
+  const timeStr = event.duration_minutes > 0 ? formatMoscowTime(date, lang) : '';
 
   return (
     <View

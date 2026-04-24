@@ -5,6 +5,7 @@ import { AlertTriangle, BellRing, Calendar } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { getFontFamily, type Language } from '../theme/fonts';
 import { Card } from './ui/Card';
+import { formatMoscowDate } from '../lib/datetime';
 import type { AnnouncementData } from '../lib/api';
 
 interface Props {
@@ -33,12 +34,7 @@ export default function AnnouncementCard({ announcement, compact = false }: Prop
       ? announcement.body_en || announcement.body_ar
       : announcement.body_ar;
 
-  const date = announcement.sent_at
-    ? new Date(announcement.sent_at).toLocaleDateString(
-        lang === 'ar' ? 'ar-EG' : lang === 'ru' ? 'ru-RU' : 'en-US',
-        { month: 'short', day: 'numeric', year: 'numeric' },
-      )
-    : '';
+  const date = announcement.sent_at ? formatMoscowDate(announcement.sent_at, lang) : '';
 
   const isCritical = announcement.priority === 'critical';
   const isHigh = announcement.priority === 'high';
