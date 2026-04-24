@@ -256,6 +256,66 @@ router.put('/admin/:id', requireAuth, validate(updateAnnouncementSchema), async 
   }
 });
 
+// --- Admin: retry a send_failed announcement ---
+// Atomically transitions send_failed -> sending, then re-dispatches via FCM.
+// markSent() flips to 'sent' on success; handler writes 'send_failed' on throw.
+router.post('/admin/:id/retry', requireAuth, sensitiveActionLimiter, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      res.status(400).json({ error: { code: 'BAD_ID', message: 'Invalid id' } });
+      return;
+    }
+
+    const [claimResult] = await pool.execute(
+      `UPDATE announcements SET status = 'sending' WHERE id = ? AND status = 'send_failed'`,
+      [id]
+    );
+    if ((claimResult as ResultSetHeader).affectedRows === 0) {
+      // Either the id is wrong or the row isn't in send_failed. Don't surface DB state to the client;
+      // check what happened and respond accordingly.
+      const [existing] = await pool.execute('SELECT status FROM announcements WHERE id = ?', [id]);
+      const rows = existing as RowDataPacket[];
+      if (rows.length === 0) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } });
+        return;
+      }
+      res.status(409).json({
+        error: {
+          code: 'INVALID_STATE',
+          message: `Announcement is in '${rows[0].status}' state; only send_failed can be retried`,
+        },
+      });
+      return;
+    }
+
+    await logAudit({
+      adminId: req.admin!.adminId,
+      action: 'retry_announcement',
+      targetType: 'announcement',
+      targetId: id,
+      ip: req.ip,
+    });
+
+    let finalStatus = 'sent';
+    try {
+      await sendAnnouncementToAll(id);
+    } catch (fcmErr) {
+      console.error('[announcements/retry] FCM send failed:', fcmErr);
+      await pool.execute(
+        `UPDATE announcements SET status = 'send_failed' WHERE id = ? AND status = 'sending'`,
+        [id]
+      );
+      finalStatus = 'send_failed';
+    }
+
+    res.json({ id, status: finalStatus });
+  } catch (err) {
+    console.error('[announcements/retry]', err);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+  }
+});
+
 // --- Admin: delete announcement (any status, including sent) ---
 
 router.delete('/admin/:id', requireAuth, async (req, res) => {

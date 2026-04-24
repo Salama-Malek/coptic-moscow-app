@@ -19,6 +19,7 @@ import snippetRoutes from './routes/snippets';
 import templateRoutes from './routes/templates';
 import cronRoutes from './routes/cron';
 import healthRoutes from './routes/health';
+import systemRoutes from './routes/system';
 import { initFirebase } from './services/fcm';
 import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -90,6 +91,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/snippets', snippetRoutes);
 app.use('/api/admin/templates', templateRoutes);
+app.use('/api/admin/system', systemRoutes);
 app.use('/api/cron', cronRoutes);
 
 // --- Serve admin panel (built Vite output) ---
