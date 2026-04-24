@@ -54,6 +54,10 @@
   "error_boundary_body": "Произошла непредвиденная ошибка. Попробуйте перезагрузить страницу.",
   "error_boundary_reload": "Перезагрузить",
 
+  "ann_stream_url": "Ссылка на прямую трансляцию (необязательно)",
+  "ann_stream_url_placeholder": "https://youtube.com/live/…",
+  "ann_stream_url_hint": "Добавит кнопку «Смотреть» к уведомлению. Используйте для воскресной Литургии.",
+
   "ann_sent": "Отправлено",
   "ann_sending": "Отправляется…",
   "ann_send_failed": "Ошибка отправки",

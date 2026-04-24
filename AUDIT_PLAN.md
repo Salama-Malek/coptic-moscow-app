@@ -193,7 +193,7 @@ These turn the app from "open when a push lands" into "open every morning." This
 - **Why it fits:** Coptic church fasts >210 days/year. Diaspora parishioners constantly Google "is today a fast?" No single reliable source in Russian.
 - **Why S:** Content is static, rule-based (movable + fixed feasts). Data ships bundled in the app; zero server dependency. Calculation engine is public-domain.
 
-#### [ ] G3 — Live-stream liturgy + "Tap to watch" push `value: 5 · effort: S · fit: 5 · strategic: 3`
+#### [x] G3 — Live-stream liturgy + "Tap to watch" push `value: 5 · effort: S · fit: 5 · strategic: 3`  ✅ shipped
 - **What:** Sunday Liturgy live-stream URL embedded in the scheduled-announcement push. Tap notification → opens YouTube / VK Live in the video player. Bonus: in-app PiP player that follows you across screens.
 - **Why it fits:** Russia has a huge "cannot attend physical liturgy" population (elderly, distant city, travel). Diaspora already attends virtually. Currently they hunt for the YouTube link in a WhatsApp group every week.
 - **Why S:** Deep-link URL extension on the announcements schema; notifee already supports action buttons. A channel-ID setting in System/Settings. ~2 days.
@@ -394,3 +394,13 @@ LIMIT 5;
   - i18n: 33 new keys (fast_type_*, fast_period_*, feast_*, fasting_*) in all three locales. Parity 64/64/64.
   - `tsc --noEmit` clean on mobile (via verify config) + server + admin-web unaffected.
   - **Next for G2 (deferred):** meal guidance tiles per day (what's allowed today), admin override for Abouna to mark specific parish-level adjustments, background push "Today is a fasting day" at sunrise for opted-in users.
+- **2026-04-24** — **G3 Live-stream + Tap-to-Watch push shipped**:
+  - Migration `004_announcement_stream_url.sql` adds nullable `stream_url VARCHAR(500)` to `announcements`. Non-destructive, auto-applies on next server start.
+  - Server: `createAnnouncementSchema` + `updateAnnouncementSchema` accept `stream_url: z.string().url().max(500).optional().nullable()`. INSERT / UPDATE column-map / all SELECT statements in `announcements.ts` and `fcm.ts` carry the field end-to-end. Retry endpoint works with no change (re-fetches from DB, URL flows through).
+  - FCM payload: `stream_url` included in data object when present; omitted entirely when null (so the mobile handler can rely on `typeof data.stream_url === 'string'`).
+  - Mobile: `displayAnnouncement()` now takes optional `streamUrl`. When set, notifee renders the notification with a localized "Watch" action button (AR / RU / EN via i18n) and propagates the URL in the notification's data.
+  - Mobile: `notifee.onBackgroundEvent` registered at module scope in `notifications.ts`; `registerNotifeeForegroundHandler()` wired from App.tsx's effect. Both route `ACTION_PRESS id='watch'` + body-press-with-stream-URL to `Linking.openURL()`.
+  - Admin-web: `NewAnnouncement` form + `EditAnnouncementModal` both get an optional Live-stream URL input with Video icon, helper text, and URL placeholder. Field reflects existing URL when editing, preserved through retry flow.
+  - i18n: `notif_watch_action` added to mobile (AR/RU/EN, parity 65/65/65). `ann_stream_url` + `ann_stream_url_placeholder` + `ann_stream_url_hint` added to admin-web (parity 126/126/126).
+  - Verified: `tsc --noEmit` clean on server + admin-web + mobile. Vite build passes; bundle +0.6 KB gzipped.
+  - Makes it a 2-minute Saturday ritual for Abouna: paste the Sunday live-stream URL into the scheduled-announcement, parishioners get a Watch button on Sunday morning.

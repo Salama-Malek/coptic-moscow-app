@@ -22,6 +22,7 @@ import {
   getDevicePushToken,
   scheduleServiceReminders,
   handleIncomingFcm,
+  registerNotifeeForegroundHandler,
 } from './src/lib/notifications';
 import { registerDevice, heartbeat, fetchCalendar, fetchAnnouncements, CalendarEventData } from './src/lib/api';
 import { expandEvents } from './src/lib/rrule';
@@ -100,6 +101,13 @@ export default function App() {
       await handleIncomingFcm(remoteMessage);
     });
     return unsubscribe;
+  }, []);
+
+  // Notifee foreground event listener — lets us react to "Watch" action taps
+  // and body-tap on stream-URL notifications while the app is open. The
+  // background variant is registered at module scope inside notifications.ts.
+  useEffect(() => {
+    return registerNotifeeForegroundHandler();
   }, []);
 
   const initialize = async () => {

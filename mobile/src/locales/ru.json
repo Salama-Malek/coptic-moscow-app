@@ -72,5 +72,7 @@
   "feast_dormition": "Успение Богородицы",
   "feast_nayrouz": "Коптский Новый год (Найруз)",
   "feast_cross": "Воздвижение Креста",
-  "feast_presentation": "Введение во храм"
+  "feast_presentation": "Введение во храм",
+
+  "notif_watch_action": "Смотреть"
 }

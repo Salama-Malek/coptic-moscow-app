@@ -54,6 +54,10 @@
   "error_boundary_body": "واجهت الصفحة خطأً غير متوقع. حاول إعادة التحميل.",
   "error_boundary_reload": "إعادة التحميل",
 
+  "ann_stream_url": "رابط البث المباشر (اختياري)",
+  "ann_stream_url_placeholder": "https://youtube.com/live/…",
+  "ann_stream_url_hint": "يضيف زر مشاهدة إلى الإشعار. استخدمه للقداس الأحد على البث المباشر.",
+
   "ann_sent": "مُرسَل",
   "ann_sending": "جارٍ الإرسال…",
   "ann_send_failed": "فشل الإرسال",

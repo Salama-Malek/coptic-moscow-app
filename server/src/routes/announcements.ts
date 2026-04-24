@@ -13,6 +13,7 @@ const router = Router();
 // --- Schemas ---
 
 // Body .max(4000) caps FCM payload size and prevents DoS; title matches DB VARCHAR(200).
+// stream_url is optional — when set, mobile shows a "Watch" action that opens the URL.
 const createAnnouncementSchema = z.object({
   title_ar: z.string().min(1).max(200),
   title_ru: z.string().max(200).optional(),
@@ -24,6 +25,7 @@ const createAnnouncementSchema = z.object({
   category: z.enum(['service', 'announcement']).default('announcement'),
   scheduled_for: z.string().datetime({ offset: true }).optional().nullable(),
   template_id: z.number().int().positive().optional().nullable(),
+  stream_url: z.string().url().max(500).optional().nullable(),
   status: z.enum(['draft', 'scheduled', 'sent']).optional(),
 });
 
@@ -37,6 +39,7 @@ const updateAnnouncementSchema = z.object({
   priority: z.enum(['normal', 'high', 'critical']).optional(),
   category: z.enum(['service', 'announcement']).optional(),
   scheduled_for: z.string().datetime({ offset: true }).nullable().optional(),
+  stream_url: z.string().url().max(500).nullable().optional(),
 });
 
 const listQuerySchema = z.object({
@@ -51,7 +54,7 @@ router.get('/', validate(listQuerySchema, 'query'), async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT id, title_ar, title_ru, title_en, body_ar, body_ru, body_en,
-              priority, category, sent_at, created_at
+              priority, category, stream_url, sent_at, created_at
        FROM announcements
        WHERE status = 'sent' AND sent_at IS NOT NULL
        ORDER BY sent_at DESC LIMIT ?`,
@@ -74,7 +77,7 @@ router.get('/admin', requireAuth, async (req, res) => {
     const [rows] = await pool.query(
       `SELECT a.id, a.title_ar, a.title_ru, a.title_en, a.body_ar, a.body_ru, a.body_en,
               a.priority, a.category, a.status, a.scheduled_for, a.sent_at, a.created_at,
-              a.created_by, adm.display_name as created_by_name,
+              a.created_by, a.stream_url, adm.display_name as created_by_name,
               sl.sent_count, sl.failed_count
        FROM announcements a
        LEFT JOIN admins adm ON adm.id = a.created_by
@@ -103,7 +106,7 @@ router.get('/admin/:id', requireAuth, async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT a.id, a.title_ar, a.title_ru, a.title_en, a.body_ar, a.body_ru, a.body_en,
               a.priority, a.category, a.status, a.scheduled_for, a.sent_at, a.created_at,
-              a.created_by, adm.display_name as created_by_name,
+              a.created_by, a.stream_url, adm.display_name as created_by_name,
               sl.sent_count, sl.failed_count
        FROM announcements a
        LEFT JOIN admins adm ON adm.id = a.created_by
@@ -146,8 +149,8 @@ router.post('/admin', requireAuth, sensitiveActionLimiter, validate(createAnnoun
 
     const [result] = await pool.execute(
       `INSERT INTO announcements
-        (title_ar, title_ru, title_en, body_ar, body_ru, body_en, priority, category, status, scheduled_for, template_id, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (title_ar, title_ru, title_en, body_ar, body_ru, body_en, priority, category, status, scheduled_for, template_id, stream_url, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.title_ar,
         data.title_ru ?? null,
@@ -160,6 +163,7 @@ router.post('/admin', requireAuth, sensitiveActionLimiter, validate(createAnnoun
         insertStatus,
         data.scheduled_for ?? null,
         data.template_id ?? null,
+        data.stream_url ?? null,
         adminId,
       ]
     );
@@ -224,6 +228,7 @@ router.put('/admin/:id', requireAuth, validate(updateAnnouncementSchema), async 
       priority: 'priority',
       category: 'category',
       scheduled_for: 'scheduled_for',
+      stream_url: 'stream_url',
     };
     for (const col of Object.keys(colMap)) {
       const key = colMap[col];

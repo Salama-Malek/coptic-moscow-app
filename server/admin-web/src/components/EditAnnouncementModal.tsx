@@ -31,6 +31,7 @@ export default function EditAnnouncementModal({ open, announcement, onClose, onS
   const [bodyEn, setBodyEn] = useState('');
   const [priority, setPriority] = useState<Priority>('normal');
   const [category, setCategory] = useState<Category>('announcement');
+  const [streamUrl, setStreamUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +86,7 @@ export default function EditAnnouncementModal({ open, announcement, onClose, onS
     setBodyEn(a.body_en ?? '');
     setPriority(a.priority);
     setCategory(a.category);
+    setStreamUrl(a.stream_url ?? '');
   }
 
   if (!announcement) return null;
@@ -105,6 +107,7 @@ export default function EditAnnouncementModal({ open, announcement, onClose, onS
         body_en: bodyEn.trim() || null,
         priority,
         category,
+        stream_url: streamUrl.trim() || null,
       });
       notifyDataChanged();
       onSaved?.();
@@ -210,6 +213,16 @@ export default function EditAnnouncementModal({ open, announcement, onClose, onS
           onChange={(e) => setBodyEn(e.target.value)}
           dir="ltr"
           rows={3}
+        />
+
+        <Input
+          type="url"
+          label={t('ann_stream_url')}
+          helper={t('ann_stream_url_hint')}
+          placeholder={t('ann_stream_url_placeholder')}
+          value={streamUrl}
+          onChange={(e) => setStreamUrl(e.target.value)}
+          dir="ltr"
         />
 
         <div

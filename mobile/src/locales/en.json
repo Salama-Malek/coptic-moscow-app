@@ -72,5 +72,7 @@
   "feast_dormition": "Dormition of the Theotokos",
   "feast_nayrouz": "Coptic New Year (Nayrouz)",
   "feast_cross": "Feast of the Cross",
-  "feast_presentation": "Entry into the Temple"
+  "feast_presentation": "Entry into the Temple",
+
+  "notif_watch_action": "Watch"
 }
