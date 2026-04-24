@@ -10,6 +10,7 @@ import CalendarPage from './pages/Calendar';
 import Templates from './pages/Templates';
 import Snippets from './pages/Snippets';
 import Team from './pages/Team';
+import SystemHealth from './pages/SystemHealth';
 import MyAccount from './pages/MyAccount';
 
 export default function App() {
@@ -42,6 +43,9 @@ export default function App() {
         } />
         <Route path="/admin/team" element={
           <ProtectedRoute><Layout><Team /></Layout></ProtectedRoute>
+        } />
+        <Route path="/admin/system" element={
+          <ProtectedRoute><Layout><SystemHealth /></Layout></ProtectedRoute>
         } />
         <Route path="/admin/my-account" element={
           <ProtectedRoute><Layout><MyAccount /></Layout></ProtectedRoute>

@@ -9,6 +9,7 @@ import {
   FileText,
   SquareStack,
   Users,
+  HeartPulse,
   UserCog,
   LogOut,
   Menu,
@@ -57,6 +58,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/admin/templates', label: t('nav_templates'), icon: FileText },
     { path: '/admin/snippets', label: t('nav_snippets'), icon: SquareStack },
     ...(isSuperAdmin ? [{ path: '/admin/team', label: t('nav_team'), icon: Users }] : []),
+    ...(isSuperAdmin ? [{ path: '/admin/system', label: t('nav_system_health'), icon: HeartPulse }] : []),
     { path: '/admin/my-account', label: t('nav_my_account'), icon: UserCog },
   ];
 

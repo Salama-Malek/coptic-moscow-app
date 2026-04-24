@@ -14,7 +14,7 @@ Living checklist of every finding from the pre-launch audit. Each item is update
 | Critical bugs | 3 | — | — | **3 / 3** (C1, C2 coded; C3 runbook-only) |
 | High priority | — | 3 | — | **1 / 3** (H2 rate-limit shipped; role-check + H1 + H3 pending) |
 | Quick wins | — | — | 3 | **3 / 3** |
-| Observability | — | 4 | 3 | **5 / 10** (OB2, OB4, OB5, OB6, OB8 shipped; OB1/OB3/OB7/OB9/OB10 pending) |
+| Observability | — | 4 | 3 | **6 / 10** (OB2, OB4, OB5, OB6, OB7, OB8 shipped; OB1/OB3/OB9/OB10 pending) |
 | Other | — | — | 5 | 0 / 5 |
 
 ---
@@ -129,7 +129,7 @@ Without this, post-launch bugs are invisible. Abouna won't report "the app showe
 - **Current:** neither client has one. Any unhandled render error = white screen with no diagnostic.
 - **Fix:** `<ErrorBoundary>` at the App root in both clients. Shows localized "Something went wrong — reload" and fires Sentry. Essential for Abouna's trust.
 
-### [ ] OB7 — Admin panel "System health" page  `P2  effort: M (half day)`
+### [x] OB7 — Admin panel "System health" page  `P2  effort: M`  ✅ shipped
 Turn `send_log` + `admin_audit_log` + cron run records into a dashboard Abouna actually sees. Suggested tiles:
 - Active devices (7d / 30d trend sparkline)
 - Notifications delivered today / this week (from `send_log`)
@@ -250,3 +250,11 @@ LIMIT 5;
   - Server deps added: `pino`, `pino-http`, `express-async-errors`, `pino-pretty` (dev).
   - `tsc --noEmit` clean on server + admin-web + mobile.
   - **Deferred (need user action):** OB1 (UptimeRobot account), OB3 (Sentry DSN), OB7 (half-day admin dashboard), OB9 (needs SMTP transport decision).
+- **2026-04-24** — **OB7 System Health page shipped**:
+  - New `GET /api/admin/system/overview` route — single endpoint returns DB/Firebase status, cron runs (last 5 per job), device stats (total / 1d / 7d / per-language), delivery stats (1d/7d sent + failed from send_log), recent send_failed announcements, and last 15 audit log entries. Gated `requireAuth + requireSuperAdmin`.
+  - New `POST /api/announcements/admin/:id/retry` — atomically transitions `send_failed → sending`, re-dispatches via FCM, flips to `sent` or `send_failed` on result. Protected by `sensitiveActionLimiter`. Returns `409 INVALID_STATE` if called on a row not in `send_failed`.
+  - New admin-web page `pages/SystemHealth.tsx` — polls overview every 30s, renders tiles for every data source. Retry button on failed rows wired to the new endpoint with toast feedback + `notifyDataChanged()` broadcast.
+  - Nav link `/admin/system` added to Layout, super-admin only.
+  - Locale keys `sys_*` + `nav_system_health` added to all three admin-web locales (parity preserved, new total 113/113/113).
+  - Bundle impact: +19 KB raw / +6 KB gzipped. Clean `tsc --noEmit` + successful `vite build`.
+  - Closes the loop on C2 — Abouna now has a visible retry path for silent-FCM-failure rows.
