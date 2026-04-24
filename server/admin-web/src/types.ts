@@ -24,6 +24,8 @@ export interface Announcement {
   created_by_name?: string;
   template_id: number | null;
   stream_url: string | null;
+  voice_url: string | null;
+  voice_duration_ms: number | null;
   created_at: string;
   sent_count?: number;
   failed_count?: number;

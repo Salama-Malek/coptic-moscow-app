@@ -104,12 +104,16 @@ type AnnouncementPayload = {
   priority?: 'normal' | 'high' | 'critical';
   /** When set, notification gets a "Watch" action and body-tap opens this URL. */
   streamUrl?: string;
+  /** When set, body is prefixed with 🎤 and voice_url is stored in notif data. */
+  voiceUrl?: string;
 };
 
 export async function displayAnnouncement(p: AnnouncementPayload): Promise<void> {
   const priority = p.priority || 'normal';
   const channelId = priority === 'critical' ? CHANNEL_CRITICAL : CHANNEL_DEFAULT;
   const hasStream = typeof p.streamUrl === 'string' && p.streamUrl.length > 0;
+  const hasVoice = typeof p.voiceUrl === 'string' && p.voiceUrl.length > 0;
+  const displayBody = hasVoice ? `🎤 ${p.body}` : p.body;
 
   // Notifee's TypeScript types omit `bubble` and `shortcutId` even though the
   // underlying native runtime accepts them. We cast for those two fields only
@@ -140,7 +144,7 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
       person: PARISH_PERSON,
       messages: [
         {
-          text: p.body,
+          text: displayBody,
           timestamp: Date.now(),
         },
       ],
@@ -171,11 +175,12 @@ export async function displayAnnouncement(p: AnnouncementPayload): Promise<void>
     announcementId: p.id,
   };
   if (hasStream) data.stream_url = p.streamUrl!;
+  if (hasVoice) data.voice_url = p.voiceUrl!;
 
   const notification: Notification = {
     id: p.id,
     title: p.title,
-    body: p.body,
+    body: displayBody,
     data,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     android: androidConfig as any,
@@ -235,12 +240,14 @@ export async function handleIncomingFcm(
 
   const priority = (data.priority || 'normal') as 'normal' | 'high' | 'critical';
   const streamUrl = typeof data.stream_url === 'string' ? data.stream_url : undefined;
+  const voiceUrl = typeof data.voice_url === 'string' ? data.voice_url : undefined;
   await displayAnnouncement({
     id: String(data.id || data.announcementId || Date.now()),
     title: String(data.title || ''),
     body: String(data.body || ''),
     priority,
     streamUrl,
+    voiceUrl,
   });
 }
 

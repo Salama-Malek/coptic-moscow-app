@@ -213,7 +213,7 @@ Drive retention, strengthen community ties. Build after Tier 1 lands.
 - **Why M:** Storage (Backblaze B2 / Cloudflare R2 free tier fits easily), audio player UI, admin upload form. Transcoding via ffmpeg-on-demand or at upload time.
 - **Open question:** Offline download vs stream-only. Offline is a bigger engineering lift but critical for Moscow metro / diaspora on patchy wifi.
 
-#### [ ] G6 — Group messaging (youth / mothers / choir / ushers) `value: 4 · effort: M · fit: 5 · strategic: 5`
+#### [~] G6 — Group messaging  `value: 4 · effort: M · fit: 5 · strategic: 5`  ⏳ broadcast subgroup pending; voice message shipped as bonus
 - **What:** Abouna picks which group(s) receive an announcement. Users opt into groups in Settings. Groups stored as JSON array on device_tokens — extends existing `preferences` pattern.
 - **Why it fits:** Abouna currently has 4 WhatsApp groups + the app. Group-targeted push reduces notification fatigue and gives each subgroup its own signal-to-noise.
 - **Why M:** Schema extension (`groups` column or JSON), admin-web multi-select, mobile group management in Settings, FCM query changes. Reasonably clean since the data model already supports it.
@@ -404,3 +404,13 @@ LIMIT 5;
   - i18n: `notif_watch_action` added to mobile (AR/RU/EN, parity 65/65/65). `ann_stream_url` + `ann_stream_url_placeholder` + `ann_stream_url_hint` added to admin-web (parity 126/126/126).
   - Verified: `tsc --noEmit` clean on server + admin-web + mobile. Vite build passes; bundle +0.6 KB gzipped.
   - Makes it a 2-minute Saturday ritual for Abouna: paste the Sunday live-stream URL into the scheduled-announcement, parishioners get a Watch button on Sunday morning.
+- **2026-04-24** — **Voice-message-on-announcement shipped** (decided after product review; see G6 note):
+  - User flagged the broadcast-group variant of G6 in favor of WhatsApp-style voice notes — pastor-to-parish voice is the higher-leverage feature for an Arabic-speaking clergy-led audience than targeted broadcasts to subgroups. Original G6 broadcast variant deferred (still tracked).
+  - Migration `005_announcement_voice.sql` adds nullable `voice_url VARCHAR(500)` + `voice_duration_ms INT` columns.
+  - Server: new route `POST /api/admin/announcements/voice` (multer disk storage, 2 MB cap, whitelisted MIME, UUID filenames). `UPLOADS_DIR` env configurable (defaults to `./uploads` in dev; **must be set outside the repo in prod** or auto-deploy wipes files). Files served via `express.static` with 30-day immutable cache. `PUBLIC_BASE_URL` env makes returned URLs absolute so mobile can consume them directly. Zod schemas + INSERT / UPDATE col-map / SELECT lists / FCM payload all threaded end-to-end.
+  - Admin-web: new `VoiceRecorder.tsx` component using the browser `MediaRecorder` API — record / preview / re-record / upload, with inline playback + 2-minute hard cap + graceful mic-denied handling. Wired into both `NewAnnouncement` and `EditAnnouncementModal` alongside the Live-stream URL field.
+  - Mobile: new `VoicePlayer.tsx` using `expo-av`, rendered inline inside `AnnouncementCard` whenever `voice_url` is present — play/pause, progress bar, duration readout, auto-unload on unmount. Announcements without voice are unchanged.
+  - Push notifications: body prefixed with 🎤 when voice is attached so the lock-screen preview signals "tap to hear Abouna" at a glance.
+  - i18n: 12 new keys (voice_* recorder strings) across AR/RU/EN admin-web. Parity 138/138/138. Mobile player has no locale strings (duration-only UI).
+  - **Prod deploy note:** set `UPLOADS_DIR=/home/<hostinger-user>/uploads` + `PUBLIC_BASE_URL=https://coptic-notify.sm4tech.com` in Hostinger env; create the uploads directory once (`mkdir -p ~/uploads/announcements`).
+  - `tsc --noEmit` clean on all three. Vite build clean. Bundle +2.76 KB gzipped.
