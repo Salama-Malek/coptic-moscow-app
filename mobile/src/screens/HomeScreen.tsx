@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { RefreshControl, View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import { Sunrise, CalendarClock, BellRing, Inbox, type LucideIcon } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { getFontFamily, type Language } from '../theme/fonts';
 import { Screen } from '../components/ui/Screen';
 import { EmptyState } from '../components/ui/EmptyState';
-import { getItem } from '../lib/storage';
+import { getItem, setItem } from '../lib/storage';
 import { expandEvents, ExpandedOccurrence } from '../lib/rrule';
-import { CalendarEventData, AnnouncementData } from '../lib/api';
+import { fetchCalendar, fetchAnnouncements, CalendarEventData, AnnouncementData } from '../lib/api';
+import { scheduleServiceReminders } from '../lib/notifications';
 import CalendarEventCard from '../components/CalendarEventCard';
 import AnnouncementCard from '../components/AnnouncementCard';
 import CopticCross from '../components/CopticCross';
@@ -22,34 +24,68 @@ export default function HomeScreen() {
   const [todayEvents, setTodayEvents] = useState<ExpandedOccurrence[]>([]);
   const [nextEvent, setNextEvent] = useState<ExpandedOccurrence | null>(null);
   const [recentAnnouncements, setRecentAnnouncements] = useState<AnnouncementData[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
+  const applyCalendar = useCallback((events: CalendarEventData[]) => {
+    const expanded = expandEvents(events);
+    const now = new Date();
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    setTodayEvents(expanded.filter((o) => o.date >= now && o.date <= todayEnd));
+    setNextEvent(expanded.find((o) => o.date > now) || null);
   }, []);
 
-  const loadData = async () => {
+  const loadFromCache = useCallback(async () => {
     const cachedCalendar = await getItem<CalendarEventData[]>('calendar');
-    if (cachedCalendar) {
-      const expanded = expandEvents(cachedCalendar);
-      const now = new Date();
-      const todayEnd = new Date(now);
-      todayEnd.setHours(23, 59, 59, 999);
-
-      const today = expanded.filter((o) => o.date >= now && o.date <= todayEnd);
-      setTodayEvents(today);
-
-      const next = expanded.find((o) => o.date > now);
-      setNextEvent(next || null);
-    }
-
+    if (cachedCalendar) applyCalendar(cachedCalendar);
     const cachedInbox = await getItem<AnnouncementData[]>('inbox');
-    if (cachedInbox) {
-      setRecentAnnouncements(cachedInbox.slice(0, 3));
+    if (cachedInbox) setRecentAnnouncements(cachedInbox.slice(0, 3));
+  }, [applyCalendar]);
+
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [freshCalendar, freshInbox] = await Promise.all([
+        fetchCalendar(),
+        fetchAnnouncements(50),
+      ]);
+      if (freshCalendar) {
+        await setItem('calendar', freshCalendar);
+        applyCalendar(freshCalendar);
+        await scheduleServiceReminders(expandEvents(freshCalendar));
+      }
+      if (freshInbox) {
+        await setItem('inbox', freshInbox);
+        setRecentAnnouncements(freshInbox.slice(0, 3));
+      }
+    } catch {
+      // offline — cached data stays
+    } finally {
+      setRefreshing(false);
     }
-  };
+  }, [applyCalendar]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFromCache();
+      refresh();
+    }, [loadFromCache, refresh]),
+  );
 
   return (
-    <Screen scrollable padded={false}>
+    <Screen
+      scrollable
+      padded={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={refresh}
+          tintColor={theme.colors.primary}
+          colors={[theme.colors.primary]}
+        />
+      }
+    >
       {/* Hero header — cross + app name */}
       <View
         style={[

@@ -1,53 +1,80 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../theme/colors';
-import { getItem } from '../lib/storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { CalendarDays } from 'lucide-react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { Screen } from '../components/ui/Screen';
+import { EmptyState } from '../components/ui/EmptyState';
+import { getItem, setItem } from '../lib/storage';
 import { expandEvents, ExpandedOccurrence } from '../lib/rrule';
-import { CalendarEventData } from '../lib/api';
+import { fetchCalendar, CalendarEventData } from '../lib/api';
+import { scheduleServiceReminders } from '../lib/notifications';
 import CalendarEventCard from '../components/CalendarEventCard';
 
 export default function CalendarScreen() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [occurrences, setOccurrences] = useState<ExpandedOccurrence[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadCalendar();
+  const applyEvents = useCallback((events: CalendarEventData[]) => {
+    setOccurrences(expandEvents(events, 30));
   }, []);
 
-  const loadCalendar = async () => {
+  // Load cached events immediately for fast paint
+  const loadFromCache = useCallback(async () => {
     const cached = await getItem<CalendarEventData[]>('calendar');
-    if (cached) {
-      setOccurrences(expandEvents(cached, 30));
+    if (cached) applyEvents(cached);
+  }, [applyEvents]);
+
+  // Fetch fresh from server, update cache + local reminders
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const fresh = await fetchCalendar();
+      if (fresh && fresh.length >= 0) {
+        await setItem('calendar', fresh);
+        applyEvents(fresh);
+        // Cancel stale reminders and reschedule based on the fresh list —
+        // this is what makes admin deletions/edits disappear locally.
+        const occ = expandEvents(fresh);
+        await scheduleServiceReminders(occ);
+      }
+    } catch {
+      // offline — cached events stay
+    } finally {
+      setRefreshing(false);
     }
-  };
+  }, [applyEvents]);
+
+  // Refresh every time the screen gains focus (tab switch, back-nav, etc.)
+  useFocusEffect(
+    useCallback(() => {
+      loadFromCache();
+      refresh();
+    }, [loadFromCache, refresh]),
+  );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t('upcoming_30_days')}</Text>
+    <Screen
+      title={t('upcoming_30_days')}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={refresh}
+          tintColor={theme.colors.primary}
+          colors={[theme.colors.primary]}
+        />
+      }
+    >
       {occurrences.length > 0 ? (
         occurrences.map((occ, i) => <CalendarEventCard key={i} occurrence={occ} />)
       ) : (
-        <Text style={styles.empty}>{t('no_events')}</Text>
+        <View style={{ marginTop: theme.spacing.lg }}>
+          <EmptyState icon={CalendarDays} title={t('no_events')} />
+        </View>
       )}
-    </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.parchment },
-  content: { padding: 16, paddingBottom: 32 },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 14,
-    paddingTop: 8,
-  },
-  empty: {
-    color: colors.muted,
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: 32,
-  },
-});
