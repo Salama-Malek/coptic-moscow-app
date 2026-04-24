@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AppState, AppStateStatus, I18nManager, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, type LinkingOptions } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
+import * as Linking from 'expo-linking';
 
 import { useFonts, Amiri_400Regular, Amiri_700Bold } from '@expo-google-fonts/amiri';
 import { NotoNaskhArabic_400Regular, NotoNaskhArabic_600SemiBold } from '@expo-google-fonts/noto-naskh-arabic';
@@ -26,6 +27,19 @@ import { expandEvents } from './src/lib/rrule';
 import TabNavigator from './src/navigation/TabNavigator';
 import LanguagePickerScreen from './src/screens/LanguagePickerScreen';
 import { ThemeProvider } from './src/theme/ThemeProvider';
+
+// Deep-link routing for Android app shortcuts (copticmoscow://inbox, etc.)
+const linking: LinkingOptions<ReactNavigation.RootParamList> = {
+  prefixes: [Linking.createURL('/'), 'copticmoscow://'],
+  config: {
+    screens: {
+      Home: 'home',
+      Calendar: 'calendar',
+      Inbox: 'inbox',
+      Settings: 'settings',
+    },
+  },
+};
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
@@ -178,7 +192,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <SafeAreaProvider onLayout={onLayoutRootView}>
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
           <TabNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
