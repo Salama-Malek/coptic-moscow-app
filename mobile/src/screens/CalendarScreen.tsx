@@ -48,11 +48,13 @@ export default function CalendarScreen() {
     }
   }, [applyEvents]);
 
-  // Refresh every time the screen gains focus (tab switch, back-nav, etc.)
+  // Refresh on focus + poll every 20s while the screen is visible.
   useFocusEffect(
     useCallback(() => {
       loadFromCache();
       refresh();
+      const id = setInterval(refresh, 20000);
+      return () => clearInterval(id);
     }, [loadFromCache, refresh]),
   );
 

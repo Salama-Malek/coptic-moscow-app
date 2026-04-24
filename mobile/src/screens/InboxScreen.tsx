@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import { Inbox } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from '../components/ui/Screen';
@@ -15,21 +16,16 @@ export default function InboxScreen() {
   const [announcements, setAnnouncements] = useState<AnnouncementData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadInbox();
-  }, []);
-
-  const loadInbox = async () => {
+  const loadFromCache = useCallback(async () => {
     const cached = await getItem<AnnouncementData[]>('inbox');
     if (cached) setAnnouncements(cached);
-    await refresh();
-  };
+  }, []);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
       const data = await fetchAnnouncements(50);
-      if (data.length > 0) {
+      if (data) {
         setAnnouncements(data);
         await setItem('inbox', data);
       }
@@ -38,7 +34,17 @@ export default function InboxScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, []);
+
+  // Refresh on focus + poll every 20s while the screen is visible.
+  useFocusEffect(
+    useCallback(() => {
+      loadFromCache();
+      refresh();
+      const id = setInterval(refresh, 20000);
+      return () => clearInterval(id);
+    }, [loadFromCache, refresh]),
+  );
 
   return (
     <Screen
